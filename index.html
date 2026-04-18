@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Xylo's Hideout - Escape Room v4.0</title>
+    <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Pirata+One&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+          "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+      }
+    </script>
+    <script crossorigin src="/assets/unminified.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-dnuxvfgh.css">
+  </head>
+  <body>
+    <!-- LOBBY DO MULTIPLAYER -->
+    <div id="lobby-screen">
+      <div class="lobby-modal">
+        <h1 style="color:var(--primary); font-family:'IM Fell English', serif;">Xylo's Hideout</h1>
+        <p>Identifique-se para sentar à mesa virtual:</p>
+        <div id="char-selection-grid"></div>
+      </div>
+    </div>
+    
+    <!-- CHAT (AÇÕES DOS JOGADORES) -->
+    <div id="chat-container">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #444; margin-bottom:10px; padding-bottom:5px;">
+          <h3 style="margin:0; border:none; padding:0; font-family:'IM Fell English', serif; font-size:1.4rem; color:var(--primary);">Diário de Mesa</h3>
+          <button onclick="document.getElementById('chat-container').classList.toggle('chat-collapsed')" style="background:transparent; border:none; color:var(--primary); cursor:pointer; font-size:1.5rem; outline:none; font-family:sans-serif;">[-]</button>
+      </div>
+      <ul id="chat-list"></ul>
+    </div>
+
+    <!-- Container Responsivo Quadrado (1:1 vindo da arte Gerada) -->
+    <div id="game-container">
+        <!-- Imagem natural (sem stretch 3D) -->
+        <img id="bg-image" src="/assets/hideout_background-Dwi4SYnR.png?cb=v4final" alt="Xylo Hideout">
+        
+                <style>
+          #vfx-layer {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 2;
+            box-shadow: inset 0 0 100px rgba(0,0,0,0.5);
+            animation: slowVignette 8s infinite alternate ease-in-out;
+          }
+          .vfx-candle {
+            position: absolute;
+            width: 50px; height: 50px;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255,200,0,0.5) 0%, transparent 70%);
+            box-shadow: 0 0 25px rgba(255,150,0,0.7);
+            animation: candleFlicker 2s infinite alternate ease-in-out;
+            mix-blend-mode: screen;
+          }
+          .vfx-candle:nth-child(even) { animation-duration: 2.3s; animation-delay: 0.5s; }
+          .vfx-candle:nth-child(3n) { animation-duration: 1.8s; animation-delay: 0.2s; }
+          @keyframes candleFlicker {
+            0% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; }
+            50% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(0.9); opacity: 0.7; }
+          }
+          .vfx-amulet {
+            position: absolute;
+            width: 60px; height: 60px;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(0,255,150,0.15) 0%, transparent 70%);
+            box-shadow: 0 0 25px rgba(0,255,150,0.3);
+            animation: magicBreathe 5s infinite alternate ease-in-out;
+            mix-blend-mode: screen;
+          }
+          @keyframes magicBreathe {
+            0% { transform: translate(-50%, -50%) scale(1); opacity: 0.3; }
+            100% { transform: translate(-50%, -50%) scale(1.3); opacity: 0.9; }
+          }
+          .vfx-window {
+            position: absolute;
+            top: 0; left: 11%;
+            width: 6%; height: 12%;
+            background: radial-gradient(ellipse at top, rgba(150,220,255,0.08) 0%, transparent 80%);
+            animation: slowPulse 6s infinite alternate ease-in-out;
+            mix-blend-mode: screen;
+          }
+          @keyframes slowPulse {
+            0% { opacity: 0.5; }
+            100% { opacity: 0.9; }
+          }
+          @keyframes slowVignette {
+            0% { box-shadow: inset 0 0 100px rgba(0,0,0,0.4); }
+            100% { box-shadow: inset 0 0 200px rgba(0,0,0,0.8); }
+          }
+          #vfx-dust-canvas {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+          }
+        </style>
+        <div id="vfx-layer">
+            <canvas id="vfx-dust-canvas"></canvas>
+            <div class="vfx-window"></div>
+            <div class="vfx-amulet" style="left: 82.91%; top: 13.88%;"></div>
+            <div class="vfx-candle" style="left: 66.11%; top: 31.66%;"></div>
+            <div class="vfx-candle" style="left: 68.80%; top: 33.24%;"></div>
+            <div class="vfx-candle" style="left: 87.89%; top: 45.78%;"></div>
+            <div class="vfx-candle" style="left: 91.40%; top: 52.31%;"></div>
+            <div class="vfx-candle" style="left: 42.13%; top: 36.06%;"></div>
+        </div>
+        <svg id="hotspots-layer" viewBox="0 0 1920 1080">
+            <!-- Coordenadas Baseadas na imagem 1920x1080 -->
+            <polygon id="hotspot-pergaminho" points="1122,640 1237,610 1281,578 1098,612" class="hotspot"
+                     onmouseenter="showHint('Uma página manuscrita por Edgar. Os diagramas parecem se mover quando não olho diretamente para eles.');"
+                     onclick="handleScrollClick();" />
+            <polygon id="hotspot-lupa" points="1325,624 1405,619 1415,702 1371,664 1341,655" class="hotspot"
+                     onmouseenter="showHint('Uma lente de aumento de latão. Suas marcas de uso contam histórias de muitas investigações.');"
+                     onclick="handleLupaClick();" />
+            <polygon id="hotspot-fenda" points="1147,429 1174,443 1117,578 1098,560" class="hotspot"
+                     onmouseenter="showHint('Uma fenda profunda no painel lateral. Algo parece estar preso lá dentro.')"
+                     onclick="handleFendaClick();" />
+            <polygon id="hotspot-olho" points="1571,100 1644,100 1637,208 1551,209" class="hotspot"
+                     onmouseenter="showHint('Uma pedra de ônix entranhada na parede. Escorregadia demais para meus dedos alcançarem.');"
+                     onclick="handleOnyxClick();" />
+            <polygon id="hotspot-placa" points="1065,208 1187,196 1189,346 1056,346" class="hotspot"
+                     onmouseenter="showHint('Uma grade de metal fixada na parede por parafusos minúsculos. Há algo tilintando atrás dela.');"
+                     onclick="handleGrateClick();" />
+            <polygon id="hotspot-gaveta" points="966,628 966,670 1007,679 1074,699 1076,658 1009,640 966,628 984,631" class="hotspot"
+                     onmouseenter="showHint('A gaveta da escrivaninha. As marcas de runas na madeira sugerem que guarda algo importante.');"
+                     onclick="handleDrawerClick();" />
+            <polygon id="hotspot-janela" points="221,1 295,3 299,122 221,119 216,71 216,24 216,3 290,0" class="hotspot"
+                     onmouseenter="showHint('O vidro está espesso e coberto por décadas de poeira e fuligem. A luz pálida da anomalia mal consegue penetrar.');"
+                     onclick="handleWindowClick();" />
+            <polygon id="hotspot-bau" points="253,637 330,611 354,619 369,652 367,707 302,734 296,686 290,658" class="hotspot"
+                     onmouseenter="showHint('Um baú de madeira reforçado. Não há fechadura comum — apenas uma fenda estreita e circular no topo.');"
+                     onclick="handleChestClick();" />
+        </svg>
+
+        <!-- Canvas Ocultos para Render Textual Dinâmico (Pergaminho) -->
+        <canvas id="text-canvas-base" width="1024" height="1024" style="display:none;"></canvas>
+        <canvas id="text-canvas-secret" width="1024" height="1024" style="display:none;"></canvas>
+        
+        <!-- Container 3D Principal (Transparente em cima de tudo para a Inspeção e Voos) -->
+        <canvas id="webgl-canvas"></canvas>
+        
+        <!-- Fundo dark animado ao debruçar sobre uma pista -->
+        <div id="blur-overlay"></div>
+    </div>
+
+    <div id="ui-layer">
+      <div id="notification"></div>
+      
+      <!-- Motor de Dicas (Hint Box) -->
+      <div id="hint-container" class="hidden">
+        <p id="hint-text"></p>
+      </div>
+
+      <!-- Fundo dark animado ao debruçar sobre uma pista -->
+      <div id="blur-overlay"></div>
+      
+      <!-- Área Interativa de Custom Cursor -->
+      <div id="lens-cursor" class="lens-cursor"></div>
+      <div id="lantern-cursor" class="lantern-cursor"></div>
+      
+      <!-- Painel de Inventário -->
+      <div id="inventory-panel">
+        <div class="inventory-section">
+          <h3>Ferramentas</h3>
+          <div class="slot-grid" id="tools-grid"></div>
+        </div>
+        
+        <div class="inventory-section">
+          <h3>Pistas</h3>
+          <div class="slot-grid" id="clues-grid"></div>
+        </div>
+        
+        <div class="inventory-section">
+          <h3>Loot</h3>
+          <div class="slot-grid" id="loot-grid"></div>
+        </div>
+        
+        <button id="close-clue-btn" style="display:none;">Voltar para Inspeção Ambiente</button>
+      </div>
+
+    </div>
+
+    <!-- Puzzle Modal -->
+    <div id="sliding-puzzle-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.95); z-index:9; justify-content:center; align-items:center; flex-direction:column;">
+        <h2 style="color:var(--primary); font-family:'IM Fell English', serif; margin-bottom: 5px; font-size: 2.2rem;">Gaveta de Runas</h2>
+        <p id="puzzle-moves" style="color:#ddd; margin-bottom: 25px; font-size:1.4rem;">Chances restantes: 35</p>
+        <div id="puzzle-grid" style="display:grid; grid-template-columns:repeat(3, 100px); gap:6px; background:#1a1510; padding:15px; border:2px solid var(--primary); border-radius: 8px; box-shadow: 0 0 30px rgba(0,0,0,0.8);">
+            <!-- javascript injected -->
+        </div>
+        <button onclick="document.getElementById('sliding-puzzle-modal').style.display='none'" style="margin-top:40px; padding:12px 30px; cursor:pointer; background: transparent; border: 2px solid var(--primary); color: var(--primary); font-family:'IM Fell English', serif; font-size: 1.2rem; border-radius: 6px;">Voltar à Investigação</button>
+    </div>
+
+    <!-- Puzzle Global Logic -->
+    <script>
+    window.puzzleState = { board: [1,2,3,4,5,6,7,8,0], moves: 35, solved: false };
+    
+    window.initPuzzle = function() {
+        document.getElementById('sliding-puzzle-modal').style.display='flex';
+        if(window.puzzleState && window.puzzleState.solved) {
+            window.renderPuzzle();
+            return;
+        }
+        window.puzzleState = { moves: 35, board: [1,2,3,4,5,6,7,8,0], solved: false };
+        let lastZeroIndex = 8;
+        for(let i=0; i<100; i++){
+            let zeroIdx = window.puzzleState.board.indexOf(0);
+            let neighbors = [];
+            if(zeroIdx%3 !== 0) neighbors.push(zeroIdx-1);
+            if(zeroIdx%3 !== 2) neighbors.push(zeroIdx+1);
+            if(zeroIdx >= 3) neighbors.push(zeroIdx-3);
+            if(zeroIdx <= 5) neighbors.push(zeroIdx+3);
+            let validNeighbors = neighbors.filter(n => n !== lastZeroIndex);
+            let targetIdx = validNeighbors.length > 0 ? validNeighbors[Math.floor(Math.random()*validNeighbors.length)] : neighbors[0];
+            window.puzzleState.board[zeroIdx] = window.puzzleState.board[targetIdx];
+            window.puzzleState.board[targetIdx] = 0;
+            lastZeroIndex = zeroIdx;
+        }
+        window.renderPuzzle();
+    }
+
+    window.moveTile = function(idx) {
+        if(window.puzzleState.solved) return;
+        let zeroIdx = window.puzzleState.board.indexOf(0);
+        let isAdj = (idx === zeroIdx-1 && idx%3!==2) || (idx === zeroIdx+1 && idx%3!==0) || (idx === zeroIdx-3) || (idx === zeroIdx+3);
+        if(isAdj){
+            if(window.puzzleMethods && window.puzzleMethods.Jo) window.puzzleMethods.Jo("wood");
+            window.puzzleState.board[zeroIdx] = window.puzzleState.board[idx];
+            window.puzzleState.board[idx] = 0;
+            window.puzzleState.moves--;
+            window.renderPuzzle();
+            window.checkWin();
+        }
+    }
+
+    window.checkWin = function() {
+        let currentString = window.puzzleState.board.join("");
+        if(currentString === "123405678") {
+            window.puzzleState.solved = true;
+            window.renderPuzzle();
+            if(window.puzzleMethods) window.puzzleMethods.Qo("As runas se encaixaram com um estalo metálico perfeito, mas o buraco central permanece vazio. O mecanismo pede uma peça matriz redonda.");
+        } else if (window.puzzleState.moves <= 0) {
+            if(window.puzzleMethods) {
+                window.puzzleMethods.Qo("As runas perdem o alinhamento e o mecanismo sofre um reset violento! Tente mover com mais sabedoria.");
+            }
+            setTimeout(window.initPuzzle, 1500); 
+        }
+    }
+
+    window.clickCenter = function() {
+        if(!window.puzzleState.solved) {
+            window.moveTile(4);
+            return;
+        }
+        let activeTool = window.getEt();
+        if(activeTool === "Olho_Nimue") {
+            if(window.puzzleMethods) window.puzzleMethods.Qo("A pedra de ônix se encaixa perfeitamente no centro, mas permanece inerte. Falta alguma centelha ou energia para ativá-la.");
+        } else if (activeTool === "Olho_Aberto") {
+            if(window.puzzleMethods) {
+                window.puzzleMethods.Jo("magic");
+                window.puzzleMethods.Qo("O Olho de Ônix canaliza a luz do Sol! As runas queimam em dourado e o fundo da gaveta desliza, revelando um fundo falso.");
+                document.getElementById('sliding-puzzle-modal').style.display='none';
+                // Cria e adiciona a Carta 
+                const matCarta = window.puzzleMethods.er("/vintage_paper.png");
+                const carta = {id:"Carta_Forja", type:"clue", title:"A Carta da Forja Real", icon:"/vintage_paper.png", mat: matCarta, dim:[2,2.5], sound:"paper", flyOrigin: new window.puzzleMethods.D(0,0,1)};
+                window.It.clues.push(carta); 
+                window.It.tools = window.It.tools.filter(x => x.id !== "Olho_Aberto");
+                window.setEt(null);
+                window.puzzleMethods.Ri();
+                window.puzzleMethods.Mr("A passagem secreta da gaveta concedeu a Carta da Forja Real!", "hotspot-gaveta");
+            }
+        } else {
+            if(window.puzzleMethods) {
+                const hint = window.getEt() ? "Isso não parece ter utilidade aqui. Talvez outra ferramenta ou uma combinação diferente sirva." : "O espaço central é precisamente redondo e tem sulcos arcanos. A ferramenta em suas mãos não se encaixa ali.";
+                window.puzzleMethods.Qo(hint);
+            }
+        }
+    }
+
+    window.renderPuzzle = function() {
+        let movesEl = document.getElementById('puzzle-moves');
+        if(window.puzzleState.solved) {
+            movesEl.innerText = "Mecanismo Travado e Alinhado.";
+            movesEl.style.color = "gold";
+        } else {
+            movesEl.innerText = "Chances restantes: " + window.puzzleState.moves;
+            movesEl.style.color = window.puzzleState.moves <= 5 ? "red" : "#ddd";
+        }
+        let grid = document.getElementById('puzzle-grid');
+        grid.innerHTML = "";
+        for(let i=0; i<9; i++){
+            let val = window.puzzleState.board[i];
+            let div = document.createElement("div");
+            div.style.width = "100px";
+            div.style.height = "100px";
+            div.style.display = "flex";
+            div.style.alignItems = "center";
+            div.style.justifyContent = "center";
+            div.style.fontSize = "32px";
+            div.style.fontFamily = "'IM Fell English', serif";
+            div.style.userSelect = "none";
+            div.style.borderRadius = "4px";
+            if(val === 0){
+                div.style.background = window.puzzleState.solved ? "radial-gradient(circle, #2d2012, #111)" : "#131313";
+                div.style.boxShadow = window.puzzleState.solved ? "inset 0 0 15px #966b26" : "inset 0 0 10px #000";
+                div.style.border = "1px solid #111";
+                div.style.cursor = "crosshair";
+                div.onclick = () => window.clickCenter();
+            } else {
+                div.style.background = "#3c3328";
+                div.style.color = window.puzzleState.solved ? "gold" : "#b09c80";
+                div.style.border = "2px solid #231c15";
+                div.style.borderTop = "2px solid #5a4b3c";
+                div.style.borderLeft = "2px solid #5a4b3c";
+                div.innerText = ["I","II","III","IV","V","VI","VII","VIII","IX"][val-1];
+                div.style.textShadow = "1px 1px 2px black";
+                div.style.cursor = "pointer";
+                div.onclick = () => window.moveTile(i);
+            }
+            grid.appendChild(div);
+        }
+    }
+    </script>
+
+    <!-- Window Reveal Modal -->
+    <style>
+      .window-hidden-text {
+        position:absolute; top:0; left:0; width:100%; height:100%; 
+        display:flex; justify-content:center; align-items:center;
+        opacity: 0; 
+        transition: opacity 0.5s ease;
+        -webkit-mask-image: radial-gradient(circle 250px at var(--cursor-x, -1000px) var(--cursor-y, -1000px), black 40%, transparent 100%);
+        mask-image: radial-gradient(circle 250px at var(--cursor-x, -1000px) var(--cursor-y, -1000px), black 40%, transparent 100%);
+        -webkit-mask-size: 100% 100%;
+        -webkit-mask-repeat: no-repeat;
+      }
+    </style>
+    <div id="window-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.95); z-index:9; justify-content:center; align-items:center; flex-direction:column;" onmousemove="window.updateWindowMask(event)">
+      <div id="window-frame" style="position:relative; width: 600px; height: 800px; border: 15px solid #1a1612; border-radius: 6px; background: #0a1128; box-shadow: inset 0 0 50px rgba(0,0,0,0.9), 0 0 30px black; overflow: hidden; cursor: crosshair;">
+        
+        <!-- Pseudo space background -->
+        <div style="position:absolute; top:50%; left:50%; width:200%; height:200%; background: radial-gradient(circle at center, #1e2840 0%, #050a14 60%); transform: translate(-50%,-50%);"></div>
+        
+        <!-- Dirty Glass Overlay -->
+        <div style="position:absolute; top:0; left:0; width:100%; height:100%; background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.01) 50%, rgba(0,0,0,0.5) 100%); backdrop-filter: blur(12px);"></div>
+        
+        <!-- Hidden Glowing Text with Masking applied -->
+        <div id="window-hidden-text" class="window-hidden-text">
+          <h1 style="color: #6eff82; text-shadow: 0 0 15px #32ff4e, 0 0 30px #2bff4e; font-family: 'IM Fell English', serif; font-size: 4rem; text-align: center; transform: rotate(-5deg); letter-spacing: 2px; width: 70%; line-height: 1.2;">Eles nos olham através do Risco</h1>
+        </div>
+      </div>
+      <button onclick="window.closeWindowModal()" style="margin-top:30px; padding:12px 30px; background: transparent; border: 2px solid var(--primary); color: var(--primary); font-family:'IM Fell English', serif; font-size: 1.2rem; border-radius: 6px; cursor: pointer;">Voltar</button>
+    </div>
+
+    <script>
+      window.openWindowModal = function() {
+          let et = window.getEt ? window.getEt() : null;
+          if (et === "Lupa") {
+              if(window.puzzleMethods) window.puzzleMethods.Qo("O vidro está embaçado demais. Uma lente de aumento não ajuda no escuro.");
+              return;
+          }
+          if (et === "ChaveDeFenda") {
+              if(window.puzzleMethods) window.puzzleMethods.Qo("A armação da báscula está soldada pela ferrugem. Não há como desmontá-la.");
+              return;
+          }
+          document.getElementById('window-modal').style.display='flex';
+          let textLayer = document.getElementById('window-hidden-text');
+          if (et === "Lanterna") {
+              textLayer.style.opacity = "1";
+          } else {
+              textLayer.style.opacity = "0";
+          }
+      }
+      window.closeWindowModal = function() {
+          document.getElementById('window-modal').style.display='none';
+      }
+      window.updateWindowMask = function(e) {
+          let frame = document.getElementById('window-frame');
+          let rect = frame.getBoundingClientRect();
+          let x = e.clientX - rect.left;
+          let y = e.clientY - rect.top;
+          let textLayer = document.getElementById('window-hidden-text');
+          if (textLayer && (textLayer.style.opacity === "1" || window.getComputedStyle(textLayer).opacity === "1")) {
+              textLayer.style.setProperty('--cursor-x', x + 'px');
+              textLayer.style.setProperty('--cursor-y', y + 'px');
+          }
+      }
+
+      // Reactive observer to handle equipping tools while the modal is already open
+      const toolObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+              if (mutation.attributeName === "data-tool") {
+                  let tool = document.body.getAttribute("data-tool");
+                  let textLayer = document.getElementById('window-hidden-text');
+                  if (textLayer) {
+                      textLayer.style.opacity = (tool === "Lanterna") ? "1" : "0";
+                  }
+              }
+          });
+      });
+      toolObserver.observe(document.body, { attributes: true });
+
+      // Dust Particles Script
+      const dustCanvas = document.getElementById('vfx-dust-canvas');
+      const ctx = dustCanvas.getContext('2d');
+      let particles = [];
+      
+      function resizeCanvas() {
+        dustCanvas.width = dustCanvas.offsetWidth;
+        dustCanvas.height = dustCanvas.offsetHeight;
+      }
+      window.addEventListener('resize', resizeCanvas);
+      setTimeout(resizeCanvas, 100);
+
+      class DustMole {
+        constructor() {
+          this.reset();
+          this.y = Math.random() * (dustCanvas.height * 0.4); 
+        }
+        reset() {
+          let w = dustCanvas.width || window.innerWidth;
+          let h = dustCanvas.height || window.innerHeight;
+          this.x = w * (0.08 + Math.random() * 0.15); // near window
+          this.y = h * (0.15 + Math.random() * 0.15); 
+          this.vx = (Math.random() - 0.3) * 0.3; // drift slightly right
+          this.vy = -(Math.random() * 0.3 + 0.1); // float UP
+          this.radius = Math.random() * 1.5 + 0.5;
+          this.alpha = 0; 
+          this.maxAlpha = Math.random() * 0.4 + 0.1;
+          this.life = 0;
+        }
+        update() {
+          this.x += this.vx;
+          this.y += this.vy;
+          this.life++;
+          
+          if (this.life < 50 && this.alpha < this.maxAlpha) this.alpha += 0.01;
+          else if (this.y < (dustCanvas.height || window.innerHeight) * 0.05) this.alpha -= 0.005;
+          else if (this.life > 300) this.alpha -= 0.005;
+          
+          if (this.alpha < 0 && this.life > 50) this.reset();
+        }
+        draw() {
+          if (this.alpha <= 0) return;
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(200, 230, 255, ${this.alpha})`;
+          ctx.fill();
+        }
+      }
+
+      for(let i=0; i<40; i++) particles.push(new DustMole());
+
+      function animateDust() {
+        ctx.clearRect(0, 0, dustCanvas.width, dustCanvas.height);
+        particles.forEach(p => { p.update(); p.draw(); });
+        requestAnimationFrame(animateDust);
+      }
+      setTimeout(animateDust, 300);
+    </script>
+
+    <!-- ===== MODO SOLO: Entra no jogo mesmo sem Mestre ===== -->
+    <script>
+    (function patchSoloMode() {
+        var _soloTimer = null;
+        function entrarSolo() {
+            clearTimeout(_soloTimer);
+            var lobbyScreen = document.getElementById('lobby-screen');
+            var chatContainer = document.getElementById('chat-container');
+            var notification = document.getElementById('notification');
+            if (lobbyScreen) lobbyScreen.style.display = 'none';
+            if (chatContainer) chatContainer.style.display = 'flex';
+            if (notification) {
+                notification.innerText = 'Modo Solo Ativo';
+                notification.classList.add('show');
+                setTimeout(function(){ notification.classList.remove('show'); }, 3000);
+            }
+        }
+        function watchLobby() {
+            var lobbyScreen = document.getElementById('lobby-screen');
+            if (!lobbyScreen) return;
+            var observer = new MutationObserver(function(muts) {
+                muts.forEach(function(m) {
+                    if (m.attributeName === 'style') {
+                        var s = lobbyScreen.style.display;
+                        if (s === 'none' || s === '') { clearTimeout(_soloTimer); observer.disconnect(); }
+                    }
+                });
+            });
+            observer.observe(lobbyScreen, { attributes: true });
+            var grid = document.getElementById('char-selection-grid');
+            if (grid) {
+                var gridObserver = new MutationObserver(function() {
+                    if (grid.innerHTML.indexOf('Conectando') !== -1) {
+                        clearTimeout(_soloTimer);
+                        _soloTimer = setTimeout(function() {
+                            var ls = document.getElementById('lobby-screen');
+                            if (ls && ls.style.display !== 'none') {
+                                entrarSolo(); observer.disconnect(); gridObserver.disconnect();
+                            }
+                        }, 4000);
+                    }
+                });
+                gridObserver.observe(grid, { childList: true, subtree: true, characterData: true });
+            }
+        }
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watchLobby);
+        else watchLobby();
+    })();
+    </script>
+
+    <!-- ===== STATE MACHINE: SISTEMA DE INTERAÇÕES DO JOGO ===== -->
+    <script id="game-state-machine">
+    'use strict';
+
+    // ─────────────────────────────────────────────────────────────
+    // 1. ESTADO GLOBAL DO JOGO
+    // ─────────────────────────────────────────────────────────────
+    window.GameState = {
+        activeTool: null,   // ID da ferramenta equipada (lido de data-tool)
+        inventory:  [],     // IDs de todos os itens já coletados
+        states: {
+            grateOpen:       false,       // Placa de metal aberta?
+            chestOpen:       false,       // Baú aberto?
+            onyxEyeState:    'scene',     // 'scene' | 'inventory_closed' | 'inventory_open'
+            puzzleSolved:    false,       // Quebra-cabeça resolvido?
+            scrollCollected: false,       // Pergaminho de Edgar coletado?
+            lupaCollected:   false,       // Lupa coletada?
+        }
+    };
+
+    // Fonte de verdade da ferramenta ativa: usa data-tool do body (definido pelo motor 3D)
+    // com fallback para GameState.activeTool
+    function _getActiveTool() {
+        return document.body.getAttribute('data-tool') || window.GameState.activeTool || null;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // 2. GAME API — Bridge para puzzleMethods (funciona sem ele)
+    // ─────────────────────────────────────────────────────────────
+
+    // Motor de dicas: exibe texto temporário na UI
+    window.showHint = function(msg) {
+        if (window.puzzleMethods && window.puzzleMethods.Qo) {
+            window.puzzleMethods.Qo(msg);
+        } else {
+            var hc = document.getElementById('hint-container');
+            var ht = document.getElementById('hint-text');
+            if (hc && ht) {
+                ht.textContent = msg;
+                hc.classList.remove('hidden');
+                clearTimeout(window._hintTimer);
+                window._hintTimer = setTimeout(function() { hc.classList.add('hidden'); }, 6000);
+            } else {
+                // fallback absoluto
+                console.info('[HINT]', msg);
+            }
+        }
+    };
+
+    // Registra ação no Diário de Mesa
+    function _logAction(msg, itemId) {
+        if (window.puzzleMethods && window.puzzleMethods.Mr) {
+            window.puzzleMethods.Mr(msg, itemId || null);
+        }
+        var chatList = document.getElementById('chat-list');
+        if (chatList) {
+            var li = document.createElement('li');
+            li.innerHTML = msg;
+            chatList.appendChild(li);
+            chatList.scrollTop = chatList.scrollHeight;
+        }
+    }
+
+    // Toca som do motor
+    function _playSound(type) {
+        if (window.puzzleMethods && window.puzzleMethods.Jo) window.puzzleMethods.Jo(type);
+    }
+
+    // Adiciona item ao inventário com retry (aguarda motor carregar)
+    function _addItem(item, grid, tries) {
+        tries = tries || 0;
+        var pm = window.puzzleMethods;
+        var inv = window.It;
+        if (pm && pm.Ri && inv && inv[grid]) {
+            // Monta material 3D se ainda não tiver
+            if (!item.mat && pm.er) item.mat = pm.er(item.icon);
+            if (!item.flyOrigin && pm.D && item._origin)
+                item.flyOrigin = new pm.D(item._origin[0], item._origin[1], item._origin[2]);
+            var exists = inv[grid].some(function(x) { return x.id === item.id; });
+            if (!exists) {
+                inv[grid].push(item);
+                pm.Ri();
+                // Marca no inventário de IDs
+                if (window.GameState.inventory.indexOf(item.id) === -1)
+                    window.GameState.inventory.push(item.id);
+            }
+        } else if (tries < 40) {
+            setTimeout(function() { _addItem(item, grid, tries + 1); }, 250);
+        }
+    }
+
+    // Remove item do inventário
+    function _removeItem(itemId) {
+        if (window.It) {
+            ['tools','clues','loot'].forEach(function(grid) {
+                if (window.It[grid]) window.It[grid] = window.It[grid].filter(function(x){ return x.id !== itemId; });
+            });
+        }
+        // Desequipa se estava ativo
+        if (_getActiveTool() === itemId) {
+            document.body.setAttribute('data-tool', '');
+            window.GameState.activeTool = null;
+            if (window.setEt) window.setEt(null);
+        }
+        if (window.puzzleMethods && window.puzzleMethods.Ri) window.puzzleMethods.Ri();
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // 3. HANDLERS DE HOTSPOT
+    // ─────────────────────────────────────────────────────────────
+
+    // ── A. CHAVE DE FENDA (hotspot-fenda) ────────────────────────
+    window.handleFendaClick = function() {
+        var GS = window.GameState;
+        if (GS.inventory.indexOf('chave_de_fenda') !== -1) {
+            showHint('A Chave de Fenda já foi removida do suporte. Você deveria tê-la no inventário.');
+            return;
+        }
+        _addItem({
+            id: 'chave_de_fenda',
+            type: 'tool',
+            title: 'Chave de Fenda',
+            icon: '/screwdriver.png',
+            dim: [1, 1.5],
+            sound: 'wood',
+            _origin: [0.59, 0.44, 0.5]
+        }, 'tools');
+        _playSound('wood');
+        showHint('Você pega a Chave de Fenda enferrujada do suporte de ferro forjado. Ela pesa mais do que parece.');
+        _logAction('🔧 Chave de Fenda coletada do suporte.', 'chave_de_fenda');
+    };
+    // backward-compat alias
+    window.interagirChaveVenda = window.handleFendaClick;
+
+    // ── B. GRADE DE METAL / PLACA (hotspot-placa) ────────────────
+    window.handleGrateClick = function() {
+        var GS = window.GameState;
+
+        if (GS.states.grateOpen) {
+            showHint('A grade já foi removida. O compartimento atrás dela permanece vazio.');
+            return;
+        }
+
+        var tool = _getActiveTool();
+
+        if (tool !== 'chave_de_fenda') {
+            showHint('Há algo metálico tilintando atrás desta grade, mas o painel está preso por parafusos minúsculos. Meus dedos não cabem ali.');
+            return;
+        }
+
+        // ✅ ferramenta correta
+        GS.states.grateOpen = true;
+        _playSound('metal');
+        _addItem({
+            id: 'moeda_sol',
+            type: 'tool',
+            title: 'Moeda do Sol',
+            icon: '/sol_coin.png',
+            dim: [1, 1],
+            sound: 'metal',
+            _origin: [0.62, 0.25, 0.5]
+        }, 'tools');
+        showHint('Com a Chave de Fenda você afrouxou os parafusos da grade! Uma Moeda do Sol cai do compartimento oculto atrás dela.');
+        _logAction('☀️ Grade aberta com a Chave de Fenda! Moeda do Sol adicionada ao inventário.', 'moeda_sol');
+    };
+    // backward-compat alias
+    window.interagirGrade = window.handleGrateClick;
+
+    // ── C. BAÚ DE MADEIRA (hotspot-bau) ──────────────────────────
+    window.handleChestClick = function() {
+        var GS = window.GameState;
+
+        if (GS.states.chestOpen) {
+            showHint('O baú já está aberto e vazio. A Lanterna do Sol foi retirada.');
+            return;
+        }
+
+        var tool = _getActiveTool();
+
+        if (tool !== 'moeda_sol') {
+            showHint('O baú está trancado. Não há uma fechadura comum — apenas uma fenda estreita e circular no topo, do exato tamanho de uma moeda.');
+            return;
+        }
+
+        // ✅ Moeda do Sol equipada
+        GS.states.chestOpen = true;
+        _removeItem('moeda_sol');
+        _playSound('metal');
+        _addItem({
+            id: 'lanterna_sol',
+            type: 'tool',
+            title: 'Lanterna do Sol',
+            icon: '/lantern.png',
+            dim: [1, 1.5],
+            sound: 'metal',
+            _origin: [0.18, 0.68, 0.5]
+        }, 'tools');
+        showHint('A Moeda do Sol desliza perfeitamente na fenda — um clique mecânico ressoa e o cadeado cede. Dentro do baú, embrulhada em veludo negro, estava a Lanterna do Sol.');
+        _logAction('🔦 Baú aberto com a Moeda do Sol! Lanterna do Sol adicionada ao inventário.', 'lanterna_sol');
+    };
+    // backward-compat alias
+    window.interagirBau = window.handleChestClick;
+
+    // ── D. JANELA AO FUNDO (hotspot-janela) ──────────────────────
+    window.handleWindowClick = function() {
+        var tool = _getActiveTool();
+        var modal = document.getElementById('window-modal');
+        var textLayer = document.getElementById('window-hidden-text');
+        if (!modal) return;
+
+        modal.style.display = 'flex';
+
+        if (tool === 'lanterna_sol') {
+            // Com a lanterna: ativa spotlight/masking
+            if (textLayer) textLayer.style.opacity = '1';
+            showHint('A luz da Lanterna do Sol dissolve a névoa suja do vidro. Palavras surgem gravadas na superfície interna.');
+        } else {
+            // Sem lanterna
+            if (textLayer) textLayer.style.opacity = '0';
+            showHint('O vidro está coberto por poeira. A luz da anomalia mal penetra. Preciso de uma fonte de luz mais poderosa.');
+        }
+    };
+    // mantém openWindowModal funcionando
+    window.openWindowModal = window.handleWindowClick;
+
+    // ── E. PERGAMINHO DE EDGAR (hotspot-pergaminho) ──────────────
+    window.handleScrollClick = function() {
+        var GS = window.GameState;
+        var tool = _getActiveTool();
+
+        if (!GS.states.scrollCollected) {
+            GS.states.scrollCollected = true;
+            _addItem({
+                id: 'carta_edgar',
+                type: 'clue',
+                title: 'Carta de Edgar',
+                icon: '/vintage_paper.png',
+                dim: [2, 2.5],
+                sound: 'paper',
+                _origin: [0.62, 0.59, 0.5]
+            }, 'clues');
+            _playSound('paper');
+            _logAction('📜 Carta de Edgar coletada da mesa.', 'carta_edgar');
+        }
+
+        // Abre inspeção 3D (motor existente)
+        if (window.puzzleMethods && window.puzzleMethods.Qo) {
+            if (tool === 'lupa') {
+                showHint('Sob a lente da lupa, certas palavras do manuscrito mudam — "caravana" torna-se "fuga", "destino" torna-se "armadilha".');
+            } else {
+                showHint('O papel sussurra ao ser tocado. Diagramas de constelações latejem, ocultando verdades que sua mente luta para decifrar. Precise uma lente.');
+            }
+        }
+    };
+
+    // ── F. LUPA (hotspot-lupa) ───────────────────────────────────
+    window.handleLupaClick = function() {
+        var GS = window.GameState;
+        if (GS.inventory.indexOf('lupa') !== -1) {
+            showHint('Sua lente de aumento. Essencial para revelar o que a vista desarmada ignora na penumbra.');
+            return;
+        }
+        GS.states.lupaCollected = true;
+        _addItem({
+            id: 'lupa',
+            type: 'tool',
+            title: 'Lupa de Latão',
+            icon: '/magnifier.png',
+            dim: [1, 1],
+            sound: 'metal',
+            _origin: [0.73, 0.63, 0.5]
+        }, 'tools');
+        _playSound('metal');
+        showHint('Você pega a lupa de latão da mesa. A lente grossa aumenta tudo dramáticamente.');
+        _logAction('🔍 Lupa de Latão coletada.', 'lupa');
+    };
+
+    // ── G. OLHO DE ÔNIX na parede (hotspot-olho) ─────────────────
+    window.handleOnyxClick = function() {
+        var GS = window.GameState;
+
+        if (GS.states.onyxEyeState !== 'scene') {
+            showHint('A pedra de ônix já foi retirada da parede. Ela deve estar no inventário.');
+            return;
+        }
+
+        var tool = _getActiveTool();
+
+        if (tool !== 'pinca') {
+            showHint('A pedra está encravada num buraco estreito e liso. Meus dedos escorregam — preciso de uma pinça ou ferramenta similar.');
+            return;
+        }
+
+        // ✅ Com a pinça
+        GS.states.onyxEyeState = 'inventory_closed';
+        _addItem({
+            id: 'olho_onix_fechado',
+            type: 'tool',
+            title: 'Olho de Ônix (Fechado)',
+            icon: '/onyx_eye.png',
+            dim: [1, 1],
+            sound: 'metal',
+            _origin: [0.82, 0.14, 0.5]
+        }, 'tools');
+        _playSound('metal');
+        showHint('Com a pinça, você extrai a pedra de ônix polida da cavidade na parede. Ela é fria e parece absorver a luz ao redor.');
+        _logAction('👁️ Olho de Ônix retirado da parede com a pinça.', 'olho_onix_fechado');
+    };
+
+    // Combinação: Olho Fechado + Lanterna no inventário → Olho Aberto
+    window.handleOnyxInventoryClick = function() {
+        var GS = window.GameState;
+        if (GS.states.onyxEyeState !== 'inventory_closed') return;
+
+        var tool = _getActiveTool();
+        if (tool !== 'lanterna_sol') {
+            showHint('A pedra de ônix permanece inerte. Talvez a luz certa a desperte.');
+            return;
+        }
+
+        GS.states.onyxEyeState = 'inventory_open';
+        _removeItem('olho_onix_fechado');
+        _addItem({
+            id: 'olho_onix_aberto',
+            type: 'tool',
+            title: 'Olho de Ônix (Ativo)',
+            icon: '/onyx_eye_open.png',
+            dim: [1, 1],
+            sound: 'magic',
+            _origin: [0, 0, 0]
+        }, 'tools');
+        _playSound('magic');
+        showHint('A luz da Lanterna do Sol atravessa o ônix — a pedra pulsa em verde esmeralda, revelando uma íris brilhante. O Olho despertou.');
+        _logAction('✨ Olho de Ônix ativado pela Lanterna do Sol!');
+    };
+
+    // ── H. GAVETA DA ESCRIVANINHA (hotspot-gaveta) ───────────────
+    window.handleDrawerClick = function() {
+        // Sync GameState com puzzleState para o centro do tabuleiro
+        if (window.puzzleState && window.puzzleState.solved) {
+            window.GameState.states.puzzleSolved = true;
+        }
+        if (window.initPuzzle) window.initPuzzle();
+    };
+
+    // Override do clickCenter para usar GameState
+    var _origClickCenter = window.clickCenter;
+    window.clickCenter = function() {
+        var GS = window.GameState;
+        if (!window.puzzleState || !window.puzzleState.solved) {
+            if (window.moveTile) window.moveTile(4);
+            return;
+        }
+        GS.states.puzzleSolved = true;
+
+        var tool = _getActiveTool();
+
+        if (tool === 'olho_onix_fechado') {
+            showHint('A pedra de ônix se encaixa perfeitamente no centro, mas permanece inerte. Falta energia — talvez precise ser ativada primeiro.');
+        } else if (tool === 'olho_onix_aberto') {
+            _playSound('magic');
+            showHint('O Olho de Ônix canaliza a luz! As runas queimam em dourado e o fundo da gaveta desliza, revelando um fundo falso.');
+            document.getElementById('sliding-puzzle-modal').style.display = 'none';
+            _removeItem('olho_onix_aberto');
+            _addItem({
+                id: 'carta_forja',
+                type: 'clue',
+                title: 'Carta da Forja Real',
+                icon: '/vintage_paper.png',
+                dim: [2, 2.5],
+                sound: 'paper',
+                _origin: [0, 0, 1]
+            }, 'clues');
+            _logAction('📜 Carta da Forja Real revelada pela gaveta secreta!', 'carta_forja');
+        } else {
+            var hint = tool
+                ? 'Isso não parece se encaixar aqui. O mecanismo pede algo circular de origem arcana.'
+                : 'O espaço central é precisamente redondo, com sulcos arcanos. Nada em suas mãos se encaixa ali.';
+            showHint(hint);
+        }
+    };
+
+    // ─────────────────────────────────────────────────────────────
+    // 4. ALIASES BACKWARD-COMPAT (puzzleState integrado)
+    // ─────────────────────────────────────────────────────────────
+    // Sync onyxEyeState aliases usados pelo motor existente
+    Object.defineProperty(window.GameState.states, 'onyxEyeState', {
+        get: function() { return this._onyxEyeState || 'scene'; },
+        set: function(v) {
+            this._onyxEyeState = v;
+            // Atualiza aliases para motor existente
+            window.Olho_Nimue   = (v === 'inventory_closed');
+            window.Olho_Aberto  = (v === 'inventory_open');
+        },
+        configurable: true
+    });
+
+    </script>
+  </body>
+</html>
