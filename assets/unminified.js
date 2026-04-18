@@ -12985,8 +12985,8 @@ if(n){
 }
 function Op(n){
 const e=document.getElementById("char-selection-grid");
-e.innerHTML="<h3 style='color:white;
-'>Conectando com o Mestre Cósmico...</h3>",xr=n,n==="Mestre"?(ri=!0,Bp()):(ri=!1,zp())}
+!e.innerHTML.includes("Conectando")&&e.insertAdjacentHTML("beforeend", "<h3 style='color:white; grid-column: 1 / -1;
+'>Conectando com o Mestre Cósmico...</h3>"),xr=n,n==="Mestre"?(ri=!0,Bp()):(ri=!1,zp())}
 function Bp(){
 Rn=new Peer(Yo),Rn.on("open",n=>{
 console.log("Mestre Hospedando com ID: "+n),vt.takenSlots.push("Mestre"),$o("Mestre")}
