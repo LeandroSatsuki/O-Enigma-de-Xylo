@@ -13831,7 +13831,7 @@ if(n){
 }
 function Op(n){
 const e=document.getElementById("char-selection-grid");
-!e.innerHTML.includes("Conectando")&&e.insertAdjacentHTML("beforeend", "<h3 style='color:white; grid-column: 1 / -1;'>Conectando com o Mestre Cósmico...</h3>"),xr=n,n==="Mestre"?(ri=!0,Bp()):(ri=!1,zp())}
+!e.innerHTML.includes("Conectando")&&e.insertAdjacentHTML("beforeend", "<h3 style='color:white; grid-column: 1 / -1;'>Conectando com o Mestre Cósmico...</h3>"),xr=n,n==="Mestre"?(ri=!0,Bp()):(ri=!1,zp()),setTimeout(()=>{typeof Qm=="function"&&Qm()},0)}
 function Bp(){
 Rn=new Peer(Yo),Rn.on("open",n=>{
 console.log("Mestre Hospedando com ID: "+n),vt.takenSlots.push("Mestre"),$o("Mestre")}
@@ -14072,11 +14072,30 @@ e.autoClear=!1;
 let s,o;
 this.overrideMaterial!==null&&(o=this.scene.overrideMaterial,this.scene.overrideMaterial=this.overrideMaterial),this.clearColor!==null&&(e.getClearColor(this._oldClearColor),e.setClearColor(this.clearColor)),this.clearAlpha!==null&&(s=e.getClearAlpha(),e.setClearAlpha(this.clearAlpha)),this.clearDepth==!0&&e.clearDepth(),e.setRenderTarget(this.renderToScreen?null:i),this.clear===!0&&e.clear(e.autoClearColor,e.autoClearDepth,e.autoClearStencil),e.render(this.scene,this.camera),this.clearColor!==null&&e.setClearColor(this._oldClearColor),this.clearAlpha!==null&&e.setClearAlpha(s),this.overrideMaterial!==null&&(this.scene.overrideMaterial=o),e.autoClear=r}
 }
-const Zp=window.AudioContext||window.webkitAudioContext,$e=new Zp;
+const Zp=window.AudioContext||window.webkitAudioContext,$e=new Zp,qe=$e.createGain();
+qe.gain.value=.45,qe.connect($e.destination);
+function Gm(){
+if(document.getElementById("investigation-ui-style"))return;
+const n=document.createElement("style");
+n.id="investigation-ui-style",n.textContent="#info-side-panel{position:fixed;right:24px;top:50%;transform:translateY(-50%);width:320px;min-height:112px;padding:18px 20px;border:1px solid rgba(201,167,119,.42);border-radius:6px;background:rgba(10,10,15,.84);box-shadow:0 12px 34px rgba(0,0,0,.55);z-index:3200;pointer-events:none;overflow:hidden}#info-side-panel .info-copy{position:relative;color:#f3e6cf;font-family:'IM Fell English',serif;font-size:1.08rem;line-height:1.38;text-shadow:1px 1px 2px #000;opacity:1;transform:translateY(0);transition:opacity .28s ease,transform .28s ease}#info-side-panel .info-copy.leaving{opacity:0;transform:translateY(-12px)}#info-side-panel .info-copy.entering{opacity:0;transform:translateY(12px)}#clue-observation{position:fixed;left:50%;transform:translateX(-50%);max-width:min(680px,70vw);padding:10px 16px;border:1px solid rgba(201,167,119,.38);border-radius:6px;background:rgba(10,10,15,.82);color:#eadcc3;font-family:'IM Fell English',serif;font-size:1.04rem;line-height:1.35;text-align:center;text-shadow:1px 1px 2px #000;z-index:3060;pointer-events:none;display:none}#volume-control{position:fixed;top:16px;right:18px;z-index:3300;display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid rgba(201,167,119,.42);border-radius:6px;background:rgba(10,10,15,.84);box-shadow:0 8px 24px rgba(0,0,0,.45);color:#eadcc3;font-family:'IM Fell English',serif}#volume-control input{width:110px;accent-color:#c9a777}#resolve-runes-btn{position:fixed;top:58px;right:18px;z-index:3300;padding:8px 12px;border:1px solid rgba(201,167,119,.58);border-radius:6px;background:rgba(44,31,18,.9);color:#f3e6cf;font-family:'IM Fell English',serif;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.45)}#resolve-runes-btn:hover{border-color:#e5c27f;color:#fff}.inv-slot{position:relative}.inv-name-label{position:absolute;left:50%;bottom:calc(100% + 7px);transform:translateX(-50%) translateY(4px);max-width:150px;padding:4px 7px;border:1px solid rgba(201,167,119,.45);border-radius:5px;background:rgba(8,8,12,.92);color:#f3e6cf;font-family:'IM Fell English',serif;font-size:.78rem;line-height:1.1;text-align:center;white-space:normal;opacity:0;pointer-events:none;transition:opacity .18s ease,transform .18s ease;text-shadow:1px 1px 2px #000;z-index:20}.inv-slot:hover .inv-name-label,.inv-slot.active .inv-name-label{opacity:1;transform:translateX(-50%) translateY(0)}#eye-cursor{position:fixed;width:74px;height:74px;margin:-37px 0 0 -37px;border-radius:50%;z-index:3400;pointer-events:none;display:none;background:radial-gradient(circle at 50% 50%,rgba(130,220,255,.24) 0%,rgba(35,120,255,.16) 34%,transparent 60%);border:1px solid rgba(95,190,255,.72);box-shadow:0 0 18px rgba(70,170,255,.65),inset 0 0 18px rgba(30,100,255,.28)}#eye-cursor:before,#eye-cursor:after{content:'';position:absolute;left:50%;top:50%;background:rgba(160,230,255,.8);transform:translate(-50%,-50%)}#eye-cursor:before{width:48px;height:1px}#eye-cursor:after{width:1px;height:48px}body[data-tool=Olho_Nimue] #eye-cursor{display:block}body[data-tool=Olho_Nimue]{cursor:none}";
+document.head.appendChild(n)}
+function Hm(){
+Gm();
+let n=document.getElementById("volume-control");
+if(!n){
+n=document.createElement("div"),n.id="volume-control",n.innerHTML='<span>Som</span><input type="range" min="0" max="1" step="0.01" value="'+qe.gain.value+'">',document.body.appendChild(n);
+n.querySelector("input").addEventListener("input",e=>{qe.gain.value=parseFloat(e.target.value)})}
+let e=document.getElementById("eye-cursor");
+e||(e=document.createElement("div"),e.id="eye-cursor",document.body.appendChild(e));
+Qm()}
+function Qm(){
+if(!ri||document.getElementById("resolve-runes-btn"))return;
+const n=document.createElement("button");
+n.id="resolve-runes-btn",n.textContent="Resolver Runas",n.onclick=()=>{window.puzzleState&&(window.puzzleState.solved=!0,window.puzzleState.board=[1,2,3,4,0,5,6,7,8],window.renderPuzzle&&window.renderPuzzle()),Qo("Atalho do Mestre: as runas foram alinhadas para teste.")},document.body.appendChild(n)}
 function Jo(n){
 $e.state==="suspended"&&$e.resume();
 const e=$e.createOscillator(),t=$e.createGain();
-e.connect(t),t.connect($e.destination);
+e.connect(t),t.connect(qe);
 const i=$e.currentTime;
 n==="metal"?(e.type="square",e.frequency.setValueAtTime(800,i),e.frequency.exponentialRampToValueAtTime(1500,i+.05),t.gain.setValueAtTime(.3,i),t.gain.exponentialRampToValueAtTime(.01,i+.1),e.start(i),e.stop(i+.1)):n==="paper"?(e.type="triangle",e.frequency.setValueAtTime(300,i),e.frequency.exponentialRampToValueAtTime(100,i+.2),t.gain.setValueAtTime(.4,i),t.gain.linearRampToValueAtTime(.01,i+.2),e.start(i),e.stop(i+.2)):n==="magic"&&(e.type="sine",e.frequency.setValueAtTime(400,i),e.frequency.linearRampToValueAtTime(600,i+.4),t.gain.setValueAtTime(.2,i),t.gain.exponentialRampToValueAtTime(.01,i+1),e.start(i),e.stop(i+1))}
 function $p(){
@@ -14088,7 +14107,7 @@ e.type="sine",e.frequency.value=.1;
 const t=$e.createGain();
 t.gain.value=8,e.connect(t),t.connect(n.frequency);
 const i=$e.createGain();
-i.gain.value=.2,n.connect(i),i.connect($e.destination),n.start($e.currentTime),e.start($e.currentTime);
+i.gain.value=.2,n.connect(i),i.connect(qe),n.start($e.currentTime),e.start($e.currentTime);
 const r=$e.sampleRate*2,s=$e.createBuffer(1,r,$e.sampleRate),o=s.getChannelData(0);
 for(let u=0;
 u<r;
@@ -14098,45 +14117,46 @@ a.buffer=s,a.loop=!0;
 const l=$e.createBiquadFilter();
 l.type="lowpass",l.frequency.value=250;
 const c=$e.createGain();
-c.gain.value=.06,a.connect(l),l.connect(c),c.connect($e.destination),a.start($e.currentTime)}
+c.gain.value=.06,a.connect(l),l.connect(c),c.connect(qe),a.start($e.currentTime);
+}
 window.addEventListener("click",()=>{
-window.bgMusicStarted||($p(),window.bgMusicStarted=!0)}
+Hm(),window.bgMusicStarted||($p(),window.bgMusicStarted=!0)}
 ,{
 once:!0}
 );
 let eo,ts;
+Hm();
 function Qo(n){
+Gm();
 const e=document.getElementById("hint-container"),t=document.getElementById("hint-text");
-e.classList.add("visible"),t.innerHTML="",clearInterval(ts),clearTimeout(eo);
-let i=0;
-ts=setInterval(()=>{
-t.innerHTML+=n.charAt(i),i++,i>=n.length&&(clearInterval(ts),eo=setTimeout(()=>e.classList.remove("visible"),5e3))}
-,25)}
+e&&e.classList.remove("visible"),clearInterval(ts),clearTimeout(eo);
+let i=document.getElementById("info-side-panel");
+if(!i)i=document.createElement("div"),i.id="info-side-panel",document.body.appendChild(i);
+let r=i.querySelector(".info-copy");
+if(r&&r.textContent===n)return;
+r&&r.classList.add("leaving");
+setTimeout(()=>{i.innerHTML="";let s=document.createElement("div");s.className="info-copy entering",s.textContent=n,i.appendChild(s),requestAnimationFrame(()=>s.classList.remove("entering"))},r?180:0);
+t&&(t.textContent=n)}
 function el(n){
 const e=document.getElementById("notification");
 e.innerText=n,e.classList.add("show"),setTimeout(()=>e.classList.remove("show"),3e3)}
-const to=`IrmÃ£o,
-
-		A nossa caravana partiu Ã s pressas.O guarda do Rei Alistair Ã© implacÃ¡vel, e essa jornada precisa ser esquecida.O tecido que vocÃª pediu estÃ¡ seguro.Olhe para o horizonte, a rota principal possui uma falha perigosa.Deixei o nosso pagamento na velha estrada, escondido na cabana do guia.
-Proteja as meninas.
-
-- E.X.`,no={
-caravana:"fuga",guarda:"assassino",jornada:"Emenda",esquecida:"rompida",tecido:"segredo",horizonte:"cÃ©u",rota:"costura",falha:"ruptura",pagamento:"mapa",estrada:"Tumba",cabana:"cripta",guia:"CartÃ³grafo"}
+const to=`Irmão, A nossa caravana partiu às pressas. O guarda do Rei Alistair é implacável, e essa jornada precisa ser esquecida. O tecido que você pediu está seguro. Olhe para o horizonte, a rota principal possui uma falha perigosa. Deixei o nosso pagamento na velha estrada, escondido na cabana do guia. O nosso destino nos aguarda. Proteja as meninas. - E.X.`,no={
+caravana:"fuga",guarda:"assassino",jornada:"Emenda",esquecida:"rompida",tecido:"segredo",horizonte:"céu",rota:"costura",falha:"ruptura",pagamento:"mapa",estrada:"Tumba",cabana:"cripta",guia:"Cartógrafo",destino:"fim"}
 ;
+const FORJA_TEXT="As suspeitas de Edgar eram fundadas. O Arcano do Sol não está morto; ele está acorrentado na Forja Real, sendo forçado a derreter a própria essência de Axioma para forjar uma arma mortal. Se eles terminarem a Máquina, Alistair terá poder suficiente para controlar toda Axioma.";
 function io(n,e,t){
 const i=document.getElementById(n),r=i.getContext("2d");
 r.clearRect(0,0,i.width,i.height);
-const s=100,o=i.width-s*2;
-let a=s+50;
-const l=50;
-return r.textAlign="left",e.split(`
-			`).forEach(u=>{
+const s=88,o=i.width-s*2;
+let a=s+58;
+const l=64;
+return r.textAlign="left",e.split("\n").forEach(u=>{
 if(u.trim()===""){
 a+=l;
 return}
 const d=u.split(" ");
 let p=[],m=0;
-r.font='40px "IM Fell English", serif';
+r.font='48px "IM Fell English", serif';
 for(let v=0;
 v<d.length;
 v++){
@@ -14149,19 +14169,15 @@ let s=t;
 n.textBaseline="alphabetic";
 for(let o of e){
 if(!o)continue;
-n.font='40px "IM Fell English", serif';
+n.font='48px "IM Fell English", serif';
 let a=n.measureText(o+" ").width,l=!1,c=o;
-if(r)for(let u of Object.keys(no)){
-let d=new RegExp(`\\b${
-		u
-	}
-	\\b`,"i");
-if(d.test(o)){
-c=o.replace(d,no[u]),l=!0;
-break}
+if(r){
+let u=o.match(/^([^A-Za-zÀ-ÿ]*)([A-Za-zÀ-ÿ]+)([^A-Za-zÀ-ÿ]*)$/);
+if(u&&no[u[2].toLowerCase()]){
+c=u[1]+no[u[2].toLowerCase()]+u[3],l=!0}
 }
 if(l){
-let u=36;
+let u=46;
 n.font=`bold ${
 		u
 	}
@@ -14176,7 +14192,7 @@ px "Pirata One", cursive`,d=n.measureText(c).width;
 n.fillStyle="#8b0000";
 let p=s+(a-d)/2;
 n.fillText(c,p,i)}
-else n.font='40px "IM Fell English", serif',n.fillStyle="#3a2b1c",n.fillText(c,s,i);
+else n.font='48px "IM Fell English", serif',n.fillStyle="#24170d",n.fillText(c,s,i);
 s+=a}
 }
 const si=new wp,fr=document.getElementById("game-container"),Si=new Pt(50,fr.clientWidth/fr.clientHeight,.1,100);
@@ -14288,7 +14304,7 @@ value:so}
 ,tSecret:{
 value:ao}
 ,tIsland:{
-value:pi.load("/islandMap.png")}
+value:pi.load("/islandmap.png")}
 ,uLensPos:{
 value:new Ge(-1,-1)}
 ,uLensRadius:{
@@ -14335,9 +14351,152 @@ const It={
 tools:[],clues:[],loot:[]}
 ;
 let Et=null,mn=null,oo=!1,rr=[];
+const invSeen={tools:new Set,clues:new Set,loot:new Set};
 const lo=document.getElementById("lens-cursor"),co=document.getElementById("lantern-cursor"),uo=new Ip,ns=new Ge;
+let edgar2dState=null;
+function om(n){
+const e=new Image;
+return e.onload=()=>{edgar2dState&&edgar2dState.staticText&&edgar2dState.canvas?qm(edgar2dState.canvas,edgar2dState.staticText):pm()},e.src=n,e}
+function am(n){
+let e=document.getElementById("clue-2d-view");
+if(!e||e.tagName.toLowerCase()!==n){
+e&&e.remove(),e=document.createElement(n),e.id="clue-2d-view",e.style.position="fixed",e.style.top="50%",e.style.left="50%",e.style.transform="translate(-50%, -50%)",e.style.zIndex="3050",e.style.maxWidth="70vw",e.style.maxHeight="70vh",e.style.objectFit="contain",document.body.appendChild(e)}
+e.style.background="transparent";
+e.style.border="0";
+e.style.boxShadow="none";
+return e}
+function lm(n){
+const e=Math.min(window.devicePixelRatio||1,2),t=window.innerWidth*.7,i=window.innerHeight*.7,r=2.5/3.5;
+let s=Math.min(t,i*r),o=s/r;
+n.style.width=s+"px",n.style.height=o+"px",n.width=Math.round(s*e),n.height=Math.round(o*e);
+return e}
+function cm(n,e){
+const t=n.getBoundingClientRect();
+return{x:(e.clientX-t.left)*(n.width/t.width),y:(e.clientY-t.top)*(n.height/t.height),inside:e.clientX>=t.left&&e.clientX<=t.right&&e.clientY>=t.top&&e.clientY<=t.bottom}}
+function Km(n){
+Gm();
+let e=document.getElementById("clue-observation");
+if(!e)e=document.createElement("div"),e.id="clue-observation",document.body.appendChild(e);
+e.textContent=n.id==="Carta_Edgar"?"A carta conserva a caligrafia de Edgar. Ferramentas certas podem separar tinta, papel e segredo.":n.id==="Carta_Forja"?"A carta da Forja Real confirma que o segredo de Axioma está sendo transformado em arma.":n.id==="Olho_Nimue"?(fm(n)?"O olho desperto pulsa em azul, como se reconhecesse um mecanismo arcano adiante.":"A superfície de ônix parece absorver a luz. Mire a Lanterna no centro para testar a íris."):("Observando: "+(n.title||"pista"));
+e.style.display="block",requestAnimationFrame(Lm)}
+function Lm(){
+let n=document.getElementById("clue-observation"),e=document.getElementById("clue-2d-view");
+if(!n||!e||n.style.display==="none")return;
+let t=e.getBoundingClientRect();
+n.style.top=Math.min(window.innerHeight-120,t.bottom+14)+"px"}
+function Nm(){
+let n=document.getElementById("clue-observation");
+n&&(n.style.display="none")}
+function mm(n,e,t,i){
+const r=edgar2dState&&edgar2dState.paper;
+if(r&&r.complete&&r.naturalWidth){
+if(!edgar2dState.paperClean){
+let s=Math.round(Math.min(r.naturalWidth,r.naturalHeight)*.04),o=document.createElement("canvas"),a=o.getContext("2d");
+o.width=r.naturalWidth-s*2,o.height=r.naturalHeight-s*2,a.drawImage(r,s,s,o.width,o.height,0,0,o.width,o.height);
+let l=a.getImageData(0,0,o.width,o.height),c=l.data;
+for(let u=0;u<c.length;u+=4)c[u]>246&&c[u+1]>246&&c[u+2]>242&&(c[u+3]=0);
+a.putImageData(l,0,0),edgar2dState.paperClean=o}
+n.drawImage(edgar2dState.paperClean,0,0,e,t)}
+}
+function vm(n,e,t,d=to,p=no){
+const i=Math.round(e*.053),r=Math.round(i*1.33),s=Math.round(e*.103),o=Math.round(e*.89),a=Math.round(t*.16);
+n.font=i+'px "IM Fell English", serif',n.textBaseline="alphabetic";
+let l=s,c=a,u=[];
+d.split(/\s+/).forEach(g=>{
+let p0=n.measureText(g).width,m=n.measureText(g+" ").width;
+if(l+m>o&&l>s)l=s,c+=r;
+let v=g.match(/^([^A-Za-zÀ-ÿ]*)([A-Za-zÀ-ÿ]+)([^A-Za-zÀ-ÿ]*)$/),_=v&&p&&p[v[2].toLowerCase()]?v[1]+p[v[2].toLowerCase()]+v[3]:null;
+u.push({raw:g,rep:_,x:l,y:c,w:p0,advance:m,font:i,line:r}),l+=m});
+return{tokens:u,font:i,line:r}}
+function xm(n,e){
+n.font=e.font+'px "IM Fell English", serif',n.fillStyle="#120903",n.textBaseline="alphabetic";
+e.tokens.forEach(t=>n.fillText(t.raw,t.x,t.y))}
+function ym(n,e,t,i,r){
+let s=Math.max(t.w,t.line*.5),o=t.x+s/2,a=t.y-t.font*.45,l=o-i.x,c=a-i.y;
+return l*l+c*c<=(r+s*.5)*(r+s*.5)}
+function wm(n,e,t,i,r){
+if(!t.rep||!ym(n,e,t,i,r))return;
+n.save(),n.beginPath(),n.arc(i.x,i.y,r,0,Math.PI*2),n.clip(),n.beginPath(),n.rect(t.x-2,t.y-t.font-6,t.w+4,t.line+8),n.clip(),mm(n,e.width,e.height),n.restore();
+n.save(),n.beginPath(),n.arc(i.x,i.y,r,0,Math.PI*2),n.clip();
+let s=Math.round(t.font*.96),o=t.w;
+do n.font='bold '+s+'px "Pirata One", cursive'; while(n.measureText(t.rep).width>o&&--s>16);
+n.fillStyle="#710000",n.textBaseline="alphabetic",n.fillText(t.rep,t.x,t.y),n.restore()}
+function um(n){
+const e=am("canvas");
+edgar2dState=edgar2dState||{paper:om("/vintage_paper.png"),island:om("/islandmap.png"),point:null,layout:null};
+edgar2dState.canvas=e,edgar2dState.active=!0,edgar2dState.staticText=null,e.style.display="block",e.className="",e.onmousemove=t=>{edgar2dState.point=cm(e,t),pm()},e.onmouseleave=()=>{edgar2dState.point=null,pm()},lm(e),edgar2dState.layout=null,pm()}
+function qm(n,e){
+const t=n.getContext("2d"),i=n.width,r=n.height;
+t.clearRect(0,0,i,r),mm(t,i,r),xm(t,vm(t,i,r,e,null)),Lm()}
+function rm(n){
+const e=am("canvas");
+edgar2dState=edgar2dState||{paper:om("/vintage_paper.png"),island:om("/islandmap.png"),point:null,layout:null};
+edgar2dState.canvas=e,edgar2dState.active=!1,edgar2dState.staticText=FORJA_TEXT,e.style.display="block",e.className="",e.onmousemove=null,e.onmouseleave=null,lm(e),qm(e,FORJA_TEXT)}
+function pm(){
+if(!edgar2dState||!edgar2dState.active||!edgar2dState.canvas)return;
+const n=edgar2dState.canvas,e=n.getContext("2d"),t=n.width,i=n.height;
+e.clearRect(0,0,t,i);
+mm(e,t,i);
+edgar2dState.layout=edgar2dState.layout||vm(e,t,i),xm(e,edgar2dState.layout);
+const o=edgar2dState.point;
+if(!o||!o.inside)return;
+if(Et==="Lupa"){
+let a=Math.min(t,i)*.16;
+edgar2dState.layout.tokens.forEach(l=>wm(e,n,l,o,a)),e.save(),e.strokeStyle="rgba(184,134,11,.85)",e.lineWidth=Math.max(3,t*.006),e.beginPath(),e.arc(o.x,o.y,a,0,Math.PI*2),e.stroke(),e.restore()}
+else if(Et==="Lanterna"&&edgar2dState.island&&edgar2dState.island.complete){
+let a=Math.min(t,i)*.25,g=e.createRadialGradient(o.x,o.y,0,o.x,o.y,a);
+const l=document.createElement("canvas"),c=l.getContext("2d");
+l.width=t,l.height=i,mm(c,t,i),c.save(),c.globalCompositeOperation="multiply",c.globalAlpha=.98,c.drawImage(edgar2dState.island,0,0,t,i),c.restore(),g.addColorStop(0,"rgba(255,255,255,1)"),g.addColorStop(.7,"rgba(255,255,255,.94)"),g.addColorStop(1,"rgba(255,255,255,0)"),c.globalCompositeOperation="destination-in",c.fillStyle=g,c.fillRect(0,0,t,i),e.drawImage(l,0,0)}
+}
+function dm(){
+if(document.getElementById("onyx-pulse-2d-style"))return;
+const n=document.createElement("style");
+n.id="onyx-pulse-2d-style",n.textContent="@keyframes onyxPulse2d{0%,100%{filter:drop-shadow(0 0 8px rgba(80,170,255,.45)) brightness(1)}50%{filter:drop-shadow(0 0 28px rgba(80,190,255,.95)) brightness(1.28)}}#clue-2d-view.onyx-pulse-2d{animation:onyxPulse2d 1.15s ease-in-out infinite}";
+document.head.appendChild(n)}
+function fm(n){
+return n&&n.id==="Olho_Nimue"&&(n.onyxOpen||n.icon==="/onyx_eye.png")}
+function gm(){
+dm();
+let n=It.tools.findIndex(e=>e.id==="Olho_Nimue"&&fm(e)),e=n>=0?It.tools[n]:null;
+if(fm(e))return e;
+It.clues=It.clues.filter(r=>r.id!=="Olho_Nimue");
+const t=Ts["hotspot-olho"],i={id:"Olho_Nimue",type:"tool",title:"Olho de Ônix (Ativo)",icon:"/onyx_eye.png",mat:t&&t.mat,dim:[1.2,1.2],sound:"magic",flyOrigin:new D(0,0,0),onyxOpen:!0};
+It.tools=It.tools.filter(r=>r.id!=="Olho_Nimue"),It.tools.push(i);
+It.loot.some(r=>r.id==="Pedra_Ioun_Intelecto")||It.loot.push({id:"Pedra_Ioun_Intelecto",type:"loot",title:"Pedra de Ioun do Intelecto",icon:"",visual:"iounBlue",dim:[1.2,1.2],sound:"magic"});
+if(window.GameState){
+window.GameState.states&&(window.GameState.states.onyxEyeState="inventory_open");
+Array.isArray(window.GameState.inventory)&&(window.GameState.inventory.includes("Olho_Nimue")||window.GameState.inventory.push("Olho_Nimue"),window.GameState.inventory.includes("Pedra_Ioun_Intelecto")||window.GameState.inventory.push("Pedra_Ioun_Intelecto"));
+window.GameState._pending&&delete window.GameState._pending.Olho_Nimue}
+oo=!0,Jo("magic"),el("Olho de Ônix ativado"),Qo("A luz da Lanterna atravessa o ônix. A íris desperta em azul, e uma Pedra de Ioun do Intelecto se desprende do brilho."),Mr("Olho de Ônix ativado pela Lanterna. Pedra de Ioun do Intelecto adicionada ao loot.","Olho_Nimue"),Ri();
+return i}
+function bm(n){
+let e=Math.min(window.innerWidth*.36,window.innerHeight*.52);
+n.style.width=e+"px",n.style.height=e+"px",n.style.maxWidth="none",n.style.maxHeight="none",n.style.objectFit="contain"}
+function zm(n){
+if(mn!=="Olho_Nimue"||Et!=="Lanterna")return;
+let e=It.tools.find(t=>t.id==="Olho_Nimue")||It.clues.find(t=>t.id==="Olho_Nimue");
+if(fm(e))return;
+let t=document.getElementById("clue-2d-view");
+if(!t||t.tagName.toLowerCase()!=="img")return;
+const i=t.getBoundingClientRect();
+if(n.clientX<i.left||n.clientX>i.right||n.clientY<i.top||n.clientY>i.bottom)return;
+let r=n.clientX-(i.left+i.width/2),s=n.clientY-(i.top+i.height/2),o=Math.min(i.width,i.height)*.2;
+if(r*r+s*s<=o*o){
+let a=gm();
+t.src=a.icon,t.alt=a.title,t.className="onyx-pulse-2d",bm(t),dm(),Km(a)}}
+function sm(n,e,t){
+if(!t||invSeen[e].has(n.id))return;
+invSeen[e].add(n.id);
+requestAnimationFrame(()=>requestAnimationFrame(()=>{
+let g=document.getElementById(e==="tools"?"tools-grid":e==="clues"?"clues-grid":"loot-grid"),i=t.getBoundingClientRect(),d=g&&g.getBoundingClientRect(),r=document.createElement("div"),s=n.flyOrigin?{x:(n.flyOrigin.x+6)/12*window.innerWidth,y:(6-n.flyOrigin.y)/12*window.innerHeight}:document.getElementById("clue-2d-view")?(()=>{let l=document.getElementById("clue-2d-view").getBoundingClientRect();return{x:l.left+l.width/2,y:l.top+l.height/2}})():{x:window.innerWidth/2,y:window.innerHeight*.45},o=i.width&&i.height?{x:i.left+i.width/2,y:i.top+i.height/2}:d?{x:d.left+d.width/2,y:d.top+d.height/2}:{x:window.innerWidth*.82,y:window.innerHeight*.84};
+r.style.position="fixed",r.style.left=s.x+"px",r.style.top=s.y+"px",r.style.width="42px",r.style.height="42px",r.style.borderRadius="50%",r.style.zIndex="3400",r.style.pointerEvents="none",r.style.background=n.visual==="iounBlue"?"radial-gradient(circle at 35% 30%, #e7fbff 0%, #70dcff 22%, #1475ff 58%, #031a52 100%)":`center/cover no-repeat url(${n.icon})`,r.style.boxShadow=n.visual==="iounBlue"?"0 0 18px rgba(86,190,255,.95), inset -8px -10px 16px rgba(0,20,90,.55)":"0 0 14px rgba(201,167,119,.75)",r.style.transform="translate(-50%, -50%) scale(.82)",r.style.opacity="0",r.style.transition="left .9s cubic-bezier(.2,.8,.2,1), top .9s cubic-bezier(.2,.8,.2,1), transform .9s ease, opacity .28s ease",document.body.appendChild(r);
+requestAnimationFrame(()=>{r.style.opacity="1",r.style.left=o.x+"px",r.style.top=o.y+"px",r.style.transform="translate(-50%, -50%) scale(.42)"});
+setTimeout(()=>{r.remove(),t.animate([{transform:"translateY(0) scale(1)"},{transform:"translateY(-5px) scale(1.08)"},{transform:"translateY(0) scale(1)"}],{duration:390,easing:"ease-out"})},980)}))}
 window.addEventListener("mousemove",n=>{
 Et==="Lupa"?(lo.style.left=n.clientX+"px",lo.style.top=n.clientY+"px"):Et==="Lanterna"&&(co.style.left=n.clientX+"px",co.style.top=n.clientY+"px");
+Et==="Olho_Nimue"&&document.getElementById("eye-cursor")&&(document.getElementById("eye-cursor").style.left=n.clientX+"px",document.getElementById("eye-cursor").style.top=n.clientY+"px");
+edgar2dState&&edgar2dState.active&&edgar2dState.canvas&&(edgar2dState.point=cm(edgar2dState.canvas,n),pm());
+zm(n);
 const t=document.getElementById("game-container").getBoundingClientRect();
 if(ns.x=(n.clientX-t.left)/t.width*2-1,ns.y=-((n.clientY-t.top)/t.height)*2+1,mn&&window.activeInspectMesh){
 const i=window.activeInspectMesh;
@@ -14383,27 +14542,31 @@ const r=document.createElement("div");
 r.className="inv-slot"+(Et===i.id?" active":""),r.style.backgroundImage=`url(${
 		i.icon
 	}
-	)`,r.onclick=()=>nm(i.id),n.appendChild(r)}
+	)`,r.title=i.title||i.id,r.onclick=()=>nm(i.id);
+let s=document.createElement("span");s.className="inv-name-label",s.textContent=i.title||i.id,r.appendChild(s),n.appendChild(r),sm(i,"tools",r)}
 ),e.innerHTML="",It.clues.forEach(i=>{
 const r=document.createElement("div");
 r.className="inv-slot"+(mn===i.id?" active":""),r.style.backgroundImage=`url(${
 		i.icon
 	}
-	)`,r.onclick=()=>ho(i.id),e.appendChild(r)}
+	)`,r.title=i.title||i.id,r.onclick=()=>ho(i.id);
+let s=document.createElement("span");s.className="inv-name-label",s.textContent=i.title||i.id,r.appendChild(s),e.appendChild(r),sm(i,"clues",r)}
 );
 const t=document.getElementById("loot-grid");
 t.innerHTML="",It.loot.forEach(i=>{
 const r=document.createElement("div");
-r.className="inv-slot"+(mn===i.id?" active":""),r.style.backgroundImage=`url(${
+r.className="inv-slot"+(mn===i.id?" active":""),i.visual==="iounBlue"?(r.style.backgroundImage="radial-gradient(circle at 35% 30%, #e7fbff 0%, #70dcff 22%, #1475ff 58%, #031a52 100%)",r.style.backgroundSize="cover"):(r.style.backgroundImage=`url(${
 		i.icon
 	}
-	)`,r.style.borderColor="#00ffff",r.style.boxShadow="0 0 10px rgba(0,255,255,0.5)",r.onclick=()=>ho(i.id),t.appendChild(r)}
+	)`),r.title=i.title||i.id,r.style.borderColor="#00ffff",r.style.boxShadow=i.visual==="iounBlue"?"0 0 16px rgba(86,190,255,.9), inset -8px -10px 16px rgba(0,20,90,.45)":"0 0 10px rgba(0,255,255,0.5)",r.onclick=()=>ho(i.id);
+let s=document.createElement("span");s.className="inv-name-label",s.textContent=i.title||i.id,r.appendChild(s),t.appendChild(r),sm(i,"loot",r)}
 )}
 function nm(n){
-Et===n?Et=null:Et=n,document.body.setAttribute("data-tool",Et||"none"),window.activeInspectMesh&&window.activeInspectMesh.userData.id==="Olho_Nimue"&&(window.activeInspectMesh.material.uniforms.uLantern.value=Et==="Lanterna",Et==="Lanterna"&&Jo("magic")),Ri()}
+Et===n?Et=null:Et=n,document.body.setAttribute("data-tool",Et||"none"),edgar2dState&&edgar2dState.active&&pm();
+window.activeInspectMesh&&window.activeInspectMesh.userData.id==="Olho_Nimue"&&(window.activeInspectMesh.material.uniforms.uLantern.value=Et==="Lanterna",Et==="Lanterna"&&Jo("magic")),Ri()}
 function ho(n){
 if(mn===n)return;
-const e=It.clues.find(i=>i.id===n)||It.loot.find(i=>i.id===n);
+let e=It.clues.find(i=>i.id===n)||It.loot.find(i=>i.id===n);
 if(!e)return;
 if(e.inspectHintRequireTool&&Et!==e.inspectHintRequireTool){
 Qo(e.inspectHintMsg);
@@ -14415,26 +14578,23 @@ Mr(`EstÃ¡ investigando detalhadamente: [${
 		e.title
 	}
 	]...`);
-let c2d = document.getElementById("clue-2d-view");
-if(!c2d) {
-    c2d = document.createElement("img");
-    c2d.id = "clue-2d-view";
-    c2d.style.position = "fixed";
-    c2d.style.top = "50%";
-    c2d.style.left = "50%";
-    c2d.style.transform = "translate(-50%, -50%)";
-    c2d.style.zIndex = "2000";
-    c2d.style.maxWidth = "70vw";
-    c2d.style.maxHeight = "70vh";
-    c2d.style.objectFit = "contain";
-    document.body.appendChild(c2d);
-}
-c2d.src = e.icon;
-c2d.alt = e.title || n;
-c2d.style.display = "block";
+let c2d;
+if(e.id==="Carta_Edgar"){
+um(e)}
+else if(e.id==="Carta_Forja"){
+rm(e)}
+else if(e.visual==="iounBlue"){
+edgar2dState&&(edgar2dState.active=!1);
+c2d=am("div"),c2d.textContent="",c2d.className="",c2d.style.width="220px",c2d.style.height="220px",c2d.style.maxWidth="42vw",c2d.style.maxHeight="42vh",c2d.style.borderRadius="50%",c2d.style.background="radial-gradient(circle at 35% 30%, #e7fbff 0%, #70dcff 22%, #1475ff 58%, #031a52 100%)",c2d.style.boxShadow="0 0 34px rgba(86,190,255,.95), inset -28px -34px 42px rgba(0,20,90,.55)",c2d.style.display="block"}
+else{
+edgar2dState&&(edgar2dState.active=!1);
+c2d=am("img"),c2d.src=e.icon,c2d.alt=e.title||n,c2d.onmousemove=null,c2d.onmouseleave=null,c2d.className=fm(e)?"onyx-pulse-2d":"",fm(e)&&dm(),e.id==="Olho_Nimue"?bm(c2d):(c2d.style.width="",c2d.style.height="",c2d.style.maxWidth="70vw",c2d.style.maxHeight="70vh"),c2d.style.display="block"}
 document.body.classList.add("inspect-mode");
-var pnl=document.getElementById("inventory-panel"); if(pnl) pnl.style.bottom="-60px";
-var clsBtn=document.getElementById("close-clue-btn"); if(clsBtn) clsBtn.style.display="block";
+var ui=document.getElementById("ui-layer"); if(ui) ui.style.zIndex="3200";
+document.querySelectorAll("#ui-layer #blur-overlay").forEach(n=>n.style.background="transparent");
+var pnl=document.getElementById("inventory-panel"); if(pnl) pnl.style.bottom="20px",pnl.style.zIndex="3300",pnl.style.opacity="1";
+var clsBtn=document.getElementById("close-clue-btn"); if(clsBtn) clsBtn.style.display="block",clsBtn.style.zIndex="3301";
+Km(e);
 Ri()}
 document.getElementById("close-clue-btn").addEventListener("click",()=>{
 if(window.activeInspectMesh) { si.remove(window.activeInspectMesh); }
@@ -14443,9 +14603,13 @@ mn = null;
 Ei = { x: 0, y: 0 };
 let c2d = document.getElementById("clue-2d-view");
 if(c2d) { c2d.style.display = "none"; }
+Nm();
+edgar2dState&&(edgar2dState.active=!1,edgar2dState.point=null);
 document.body.classList.remove("inspect-mode");
 document.getElementById("close-clue-btn").style.display="none";
-document.getElementById("inventory-panel").style.bottom="20px";
+let ui=document.getElementById("ui-layer"); if(ui) ui.style.zIndex="";
+document.querySelectorAll("#ui-layer #blur-overlay").forEach(n=>n.style.background="");
+let pnl=document.getElementById("inventory-panel"); if(pnl) pnl.style.bottom="20px",pnl.style.zIndex="",pnl.style.opacity="";
 Ri()}
 );
 let Ei={
@@ -14467,7 +14631,7 @@ Es.render()}
 tl();
 window.addEventListener("resize",()=>{
 const n=document.getElementById("game-container");
-Si.aspect=n.clientWidth/n.clientHeight,Si.updateProjectionMatrix(),wi.setSize(n.clientWidth,n.clientHeight),Es.setSize(n.clientWidth,n.clientHeight)}
+Si.aspect=n.clientWidth/n.clientHeight,Si.updateProjectionMatrix(),wi.setSize(n.clientWidth,n.clientHeight),Es.setSize(n.clientWidth,n.clientHeight),edgar2dState&&edgar2dState.active&&edgar2dState.canvas&&(lm(edgar2dState.canvas),edgar2dState.layout=null,pm()),mn==="Olho_Nimue"&&document.getElementById("clue-2d-view")&&bm(document.getElementById("clue-2d-view")),Lm()}
 );
 window._syncNetworkItems=function(n){
 n.forEach(e=>{
@@ -14502,6 +14666,27 @@ window.It = It;
 window.getEt = function() { return Et; };
 window.setEt = function(v) { Et = v; document.body.setAttribute("data-tool", Et || "none"); Ri(); };
 window.puzzleMethods = { Ri: Ri, Qo: Qo, Mr: Mr, Jo: Jo, er: er, D: D };
+window.clickCenter=function(){
+const n=window.GameState;
+if(!window.puzzleState||!window.puzzleState.solved){
+window.moveTile&&window.moveTile(4);
+return}
+n&&(n.states.puzzleSolved=!0);
+const e=It.tools.some(t=>t.id==="Olho_Nimue"&&fm(t)),i=Et==="Olho_Nimue"&&e;
+if(i){
+if(n&&n._pending&&n._pending.Carta_Forja)return;
+n&&((n._pending=n._pending||{}).Carta_Forja=!0);
+Jo("magic"),Qo("O Olho de Ônix canaliza a luz! As runas queimam em dourado e o fundo da gaveta desliza, revelando um fundo falso.");
+const r=document.getElementById("sliding-puzzle-modal");
+r&&(r.style.display="none");
+It.tools=It.tools.filter(t=>t.id!=="Olho_Nimue"),Et=null,document.body.setAttribute("data-tool","none");
+n&&Array.isArray(n.inventory)&&(n.inventory=n.inventory.filter(t=>t!=="Olho_Nimue"));
+It.clues.some(t=>t.id==="Carta_Forja")||It.clues.push({id:"Carta_Forja",type:"clue",title:"Carta da Forja Real",icon:"/vintage_paper.png",mat:er("/vintage_paper.png"),dim:[2.5,3.5],sound:"paper",flyOrigin:new D(0,0,1),forjaText:FORJA_TEXT});
+Ri(),Mr("A passagem secreta da gaveta concedeu a Carta da Forja Real!","Carta_Forja");
+return}
+if(n&&n.states&&n.states.onyxEyeState==="inventory_closed")Qo("A pedra de ônix permanece fechada. A Lanterna precisa despertar a íris antes de encaixá-la nas runas.");
+else if(e)Qo("Selecione o Olho de Ônix ativo nas ferramentas antes de tocar o centro da tábua.");
+else Qo("O espaço central é precisamente redondo, com sulcos arcanos. Nada em suas mãos se encaixa ali.")};
 Object.defineProperty(window, 'Ts', {
     get: function() { return Ts; }
 });
