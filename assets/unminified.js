@@ -14188,6 +14188,8 @@ wi.setClearColor(0,0);
 wi.setSize(fr.clientWidth,fr.clientHeight);
 wi.setPixelRatio(Math.min(window.devicePixelRatio,2));
 const Es=new Kp(wi);
+Es.addPass(new jp(si,Si));
+
 const pi=new Dp,Jp=`
  out vec2 vUv;
 	void main() {
@@ -14300,7 +14302,7 @@ value:.25}
 ,uIsLanternActive:{
 value:!1}
 }
-,vertexShader:Jp,fragmentShader:Qp,transparent:!0,side:Wt,glslVersion:1036}
+,vertexShader:Jp,fragmentShader:Qp,transparent:!0,side:Wt,glslVersion:ua}
 ),dim:[2.5,3.5],sound:"paper",flyOrigin:new D(0,0,1)}
 ,"hotspot-olho":{
 id:"Olho_Nimue",type:"clue",title:"O Olho de Ônix",icon:"/onyx_eye_closed.png",mat:new Ht({
@@ -14320,7 +14322,7 @@ value:0}
 		vUv = uv;
 		gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 	}
-	`,fragmentShader:em,transparent:!0,glslVersion:1036}
+	`,fragmentShader:em,transparent:!0,glslVersion:ua}
 ),dim:[1.2,1.2],sound:"magic",flyOrigin:new D(-2,2,1)}
 ,"hotspot-placa":{
 id:"Moeda_Salitria",type:"clue",title:"A Moeda de Salítria",icon:"/sol_coin.png",mat:er("/sol_coin.png"),dim:[1,1],sound:"metal",flyOrigin:new D(2,4,1),sceneCollectRequireTool:"ChaveDeFenda",sceneCollectHintMsg:"Há algo metálico tilintando atrás desta grade, mas o painel está preso por minúsculos parafusos antigos. Meus dedos não cabem ali."}
@@ -14411,7 +14413,14 @@ window.activeInspectMesh&&(si.remove(window.activeInspectMesh),window.activeInsp
 	}
 	]...`);
 const t=new Gt(new bi(e.dim[0]*2,e.dim[1]*2),e.mat);
-t.position.set(0,0,4),t.userData=e,window.activeInspectMesh=t,si.add(t),document.body.classList.add("inspect-mode"),document.getElementById("inventory-panel").style.bottom="-60px",document.getElementById("close-clue-btn").style.display="block",Ri()}
+window.activeInspectMesh=t;
+si.add(t);
+t.position.set(0,0,4);
+t.userData=e;
+document.body.classList.add("inspect-mode");
+var pnl=document.getElementById("inventory-panel"); if(pnl) pnl.style.bottom="-60px";
+var clsBtn=document.getElementById("close-clue-btn"); if(clsBtn) clsBtn.style.display="block";
+Ri()}
 document.getElementById("close-clue-btn").addEventListener("click",()=>{
 window.activeInspectMesh&&si.remove(window.activeInspectMesh),window.activeInspectMesh=null,mn=null,Ei={
 x:0,y:0}
@@ -14471,3 +14480,6 @@ window.It = It;
 window.getEt = function() { return Et; };
 window.setEt = function(v) { Et = v; document.body.setAttribute("data-tool", Et || "none"); Ri(); };
 window.puzzleMethods = { Ri: Ri, Qo: Qo, Mr: Mr, Jo: Jo, er: er, D: D };
+Object.defineProperty(window, 'Ts', {
+    get: function() { return Ts; }
+});
