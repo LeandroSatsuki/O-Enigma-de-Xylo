@@ -14408,23 +14408,45 @@ if(!e)return;
 if(e.inspectHintRequireTool&&Et!==e.inspectHintRequireTool){
 Qo(e.inspectHintMsg);
 return}
-window.activeInspectMesh&&(si.remove(window.activeInspectMesh),window.activeInspectMesh=null),mn=n,Mr(`EstÃ¡ investigando detalhadamente: [${
+if(window.activeInspectMesh) { si.remove(window.activeInspectMesh); }
+window.activeInspectMesh = null;
+mn = n;
+Mr(`EstÃ¡ investigando detalhadamente: [${
 		e.title
 	}
 	]...`);
-const t=new Gt(new bi(e.dim[0]*2,e.dim[1]*2),e.mat);
-window.activeInspectMesh=t;
-si.add(t);
-t.position.set(0,0,4);
-t.userData=e;
+let c2d = document.getElementById("clue-2d-view");
+if(!c2d) {
+    c2d = document.createElement("img");
+    c2d.id = "clue-2d-view";
+    c2d.style.position = "fixed";
+    c2d.style.top = "50%";
+    c2d.style.left = "50%";
+    c2d.style.transform = "translate(-50%, -50%)";
+    c2d.style.zIndex = "2000";
+    c2d.style.maxWidth = "70vw";
+    c2d.style.maxHeight = "70vh";
+    c2d.style.objectFit = "contain";
+    document.body.appendChild(c2d);
+}
+c2d.src = e.icon;
+c2d.alt = e.title || n;
+c2d.style.display = "block";
 document.body.classList.add("inspect-mode");
 var pnl=document.getElementById("inventory-panel"); if(pnl) pnl.style.bottom="-60px";
 var clsBtn=document.getElementById("close-clue-btn"); if(clsBtn) clsBtn.style.display="block";
 Ri()}
 document.getElementById("close-clue-btn").addEventListener("click",()=>{
-window.activeInspectMesh&&si.remove(window.activeInspectMesh),window.activeInspectMesh=null,mn=null,Ei={
-x:0,y:0}
-,document.body.classList.remove("inspect-mode"),document.getElementById("close-clue-btn").style.display="none",document.getElementById("inventory-panel").style.bottom="20px",Ri()}
+if(window.activeInspectMesh) { si.remove(window.activeInspectMesh); }
+window.activeInspectMesh = null;
+mn = null;
+Ei = { x: 0, y: 0 };
+let c2d = document.getElementById("clue-2d-view");
+if(c2d) { c2d.style.display = "none"; }
+document.body.classList.remove("inspect-mode");
+document.getElementById("close-clue-btn").style.display="none";
+document.getElementById("inventory-panel").style.bottom="20px";
+Ri()}
 );
 let Ei={
 x:0,y:0}
