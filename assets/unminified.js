@@ -13816,7 +13816,7 @@ revision:fs}
 typeof window<"u"&&(window.__THREE__?console.warn("WARNING: Multiple instances of Three.js being imported."):window.__THREE__=fs);
 const Np=["Nox","Dorfin","Sebastian","Cindy","Adriel","Mestre"];
 let Rn=null,wn=null,ir=[],ri=!1,xr="",vt={
-takenSlots:[],collectedItems:[],chatLog:[]}
+takenSlots:[],collectedItems:[],chatLog:[],table:null}
 ;
 const Yo="xylo-escape-room-host-001";
 function Fp(){
@@ -13834,10 +13834,10 @@ const e=document.getElementById("char-selection-grid");
 !e.innerHTML.includes("Conectando")&&e.insertAdjacentHTML("beforeend", "<h3 style='color:white; grid-column: 1 / -1;'>Conectando com o Mestre Cósmico...</h3>"),xr=n,n==="Mestre"?(ri=!0,Bp()):(ri=!1,zp()),setTimeout(()=>{typeof Qm=="function"&&Qm()},0)}
 function Bp(){
 Rn=new Peer(Yo),Rn.on("open",n=>{
-console.log("Mestre Hospedando com ID: "+n),vt.takenSlots.push("Mestre"),$o("Mestre")}
+console.log("Mestre Hospedando com ID: "+n),vt.takenSlots.includes("Mestre")||vt.takenSlots.push("Mestre"),$o("Mestre"),updateOnlineUi()}
 ),Rn.on("connection",n=>{
 ir.push(n),n.on("data",e=>Ko(e,n)),n.on("close",()=>{
-ir=ir.filter(e=>e!==n),dr()}
+ir=ir.filter(e=>e!==n),n.character&&(vt.takenSlots=vt.takenSlots.filter(e=>e!==n.character)),dr()}
 )}
 ),Rn.on("error",n=>{
 n.type==="unavailable-id"?(alert("A sala do Mestre já está aberta! Você não pode ser o Mestre duas vezes."),location.reload()):console.error(n)}
@@ -13856,28 +13856,30 @@ alert("Não foi possível conectar. O Mestre já abriu a mesa?"),location.reload
 function Ko(n,e=null){
 n.type==="REQUEST_JOIN"&&ri&&(vt.takenSlots.includes(n.character)?e.send({
 type:"JOIN_REJECTED",msg:"Personagem já em uso!"}
-):(vt.takenSlots.push(n.character),e.send({
+):(e.character=n.character,vt.takenSlots.push(n.character),vt.table=networkBuildSnapshot(),e.send({
 type:"JOIN_ACCEPTED",state:vt}
 ),Gp(`O jogador ${
 		n.character
 	}
- entrou no esconderijo.`),dr())),n.type==="JOIN_REJECTED"&&(alert(n.msg),location.reload()),n.type==="JOIN_ACCEPTED"&&(vt=n.state,$o(xr),Zo()),n.type==="SYNC_STATE"&&(vt=n.state,jo()),n.type==="ACTION_EVENT"&&ri&&(vt.chatLog.push(n.log),n.item&&!vt.collectedItems.includes(n.item)&&vt.collectedItems.push(n.item),dr())}
+ entrou no esconderijo.`),dr())),n.type==="JOIN_REJECTED"&&(alert(n.msg),location.reload()),n.type==="JOIN_ACCEPTED"&&(vt=n.state,$o(xr),jo()),n.type==="SYNC_STATE"&&(vt=n.state,jo()),n.type==="ACTION_EVENT"&&ri&&(vt.chatLog.push(n.log),n.item&&!vt.collectedItems.includes(n.item)&&vt.collectedItems.push(n.item),n.item&&networkAddItemById(n.item),dr())}
 function Gp(n,e){
 Mr(n,null)}
 function dr(){
 if(!ri)return;
+vt.table=networkBuildSnapshot();
 const n={
 type:"SYNC_STATE",state:vt}
 ;
 ir.forEach(e=>e.send(n)),jo()}
+function cleanLogText(n){
+let e=String(n??"");
+const t=document.createElement("textarea");
+t.innerHTML=e,e=t.value,e=e.replace(/<[^>]*>/g,"").replace(/\s+/g," ").replace(/\s+:/g,":").trim();
+if(/[ÃÂ]/.test(e))try{e=decodeURIComponent(escape(e))}catch(i){}
+return e.replace(/EstÃ¡/g,"Está").replace(/VocÃª/g,"Você").replace(/vocÃª/g,"você").replace(/NÃºcleo/g,"Núcleo").replace(/Lanterna/g,"Lanterna")}
 function Mr(n,e=null){
-const t=`< b > ${
-		xr
-	}
-</b >: ${
-		n
-	}
-	`;
+isHiddenRoomAccessMarker(e)&&(e=null);
+const t=xr+": "+cleanLogText(n);
 ri?(vt.chatLog.push({
 txt:t,time:new Date().toLocaleTimeString()}
 ),e&&!vt.collectedItems.includes(e)&&vt.collectedItems.push(e),dr()):wn&&wn.send({
@@ -13886,21 +13888,26 @@ txt:t,time:new Date().toLocaleTimeString()}
 ,item:e}
 )}
 function jo(){
-Zo(),window._syncNetworkItems&&window._syncNetworkItems(vt.collectedItems)}
+Zo(),window._syncNetworkItems&&window._syncNetworkItems(vt.collectedItems),updateOnlineUi()}
 function Zo(){
 const n=document.getElementById("chat-list");
 n&&(n.innerHTML="",vt.chatLog.slice(-15).forEach(e=>{
-let t=document.createElement("li");
-t.innerHTML=`< span class="time" > [${
-		e.time
-	}
-	]</span > ${
-		e.txt
-	}
-	`,n.appendChild(t)}
+let t=document.createElement("li"),i=document.createElement("span"),r=cleanLogText(e.txt);
+i.className="time",i.textContent="["+e.time+"] ",t.appendChild(i),t.appendChild(document.createTextNode(r)),n.appendChild(t)}
 ),n.scrollTop=n.scrollHeight)}
+function updateOnlineUi(){
+let n=document.getElementById("table-online-indicator");
+if(!n){
+n=document.createElement("div"),n.id="table-online-indicator",n.style.cssText="position:fixed;right:192px;top:16px;z-index:3350;display:flex;align-items:center;gap:10px;padding:8px 11px;border:1px solid rgba(201,167,119,.44);border-radius:6px;background:rgba(10,10,15,.84);box-shadow:0 8px 24px rgba(0,0,0,.45);color:#eadcc3;font-family:'IM Fell English',serif;font-size:.95rem;text-shadow:1px 1px 2px #000",n.innerHTML='<span id="table-online-text"></span>',document.body.appendChild(n)}
+let e=vt&&Array.isArray(vt.takenSlots)?vt.takenSlots.filter(Boolean):[],t=document.getElementById("table-online-text"),i=window.GameState&&window.GameState.states&&window.GameState.states.currentRoom||"Sala_Principal";
+t&&(t.textContent="Mesa Online • "+Math.max(1,e.length)+" jogador"+(Math.max(1,e.length)>1?"es":""));
+let r=document.getElementById("table-room-select");
+if(ri){
+if(!r)r=document.createElement("select"),r.id="table-room-select",r.style.cssText="background:rgba(28,22,17,.92);color:#f3e6cf;border:1px solid rgba(201,167,119,.52);border-radius:5px;padding:4px 7px;font:inherit",r.innerHTML='<option value="Sala_Principal">Sala Principal</option><option value="Quarto_Escondido">Quarto Escondido</option>',r.onchange=()=>setTableRoom(r.value,!0),n.appendChild(r);
+r.value=i,r.querySelector('option[value="Quarto_Escondido"]').disabled=!(window.GameState&&window.GameState.states&&(window.GameState.states.hiddenRoomUnlocked||window.GameState.states.quartoEscondidoDesbloqueado))}
+else r&&r.remove()}
 function $o(n){
-document.getElementById("lobby-screen").style.display="none",document.getElementById("chat-container").style.display="flex",document.getElementById("notification").innerText="Jogando como: "+n,document.getElementById("notification").classList.add("show"),setTimeout(()=>document.getElementById("notification").classList.remove("show"),3e3)}
+document.getElementById("lobby-screen").style.display="none",document.getElementById("chat-container").style.display="flex",document.getElementById("notification").innerText="Jogando como: "+n,document.getElementById("notification").classList.add("show"),setTimeout(()=>document.getElementById("notification").classList.remove("show"),3e3),updateOnlineUi()}
 if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", Fp);
 } else {
@@ -14077,7 +14084,15 @@ qe.gain.value=.45,qe.connect($e.destination);
 function Gm(){
 if(document.getElementById("investigation-ui-style"))return;
 const n=document.createElement("style");
-n.id="investigation-ui-style",n.textContent="#info-side-panel{position:fixed;right:24px;top:50%;transform:translateY(-50%);width:320px;min-height:112px;padding:18px 20px;border:1px solid rgba(201,167,119,.42);border-radius:6px;background:rgba(10,10,15,.84);box-shadow:0 12px 34px rgba(0,0,0,.55);z-index:3200;pointer-events:none;overflow:hidden}#info-side-panel .info-copy{position:relative;color:#f3e6cf;font-family:'IM Fell English',serif;font-size:1.08rem;line-height:1.38;text-shadow:1px 1px 2px #000;opacity:1;transform:translateY(0);transition:opacity .28s ease,transform .28s ease}#info-side-panel .info-copy.leaving{opacity:0;transform:translateY(-12px)}#info-side-panel .info-copy.entering{opacity:0;transform:translateY(12px)}#clue-observation{position:fixed;left:50%;transform:translateX(-50%);max-width:min(680px,70vw);padding:10px 16px;border:1px solid rgba(201,167,119,.38);border-radius:6px;background:rgba(10,10,15,.82);color:#eadcc3;font-family:'IM Fell English',serif;font-size:1.04rem;line-height:1.35;text-align:center;text-shadow:1px 1px 2px #000;z-index:3060;pointer-events:none;display:none}#volume-control{position:fixed;top:16px;right:18px;z-index:3300;display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid rgba(201,167,119,.42);border-radius:6px;background:rgba(10,10,15,.84);box-shadow:0 8px 24px rgba(0,0,0,.45);color:#eadcc3;font-family:'IM Fell English',serif}#volume-control input{width:110px;accent-color:#c9a777}#resolve-runes-btn{position:fixed;top:58px;right:18px;z-index:3300;padding:8px 12px;border:1px solid rgba(201,167,119,.58);border-radius:6px;background:rgba(44,31,18,.9);color:#f3e6cf;font-family:'IM Fell English',serif;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.45)}#resolve-runes-btn:hover{border-color:#e5c27f;color:#fff}.inv-slot{position:relative}.inv-name-label{position:absolute;left:50%;bottom:calc(100% + 7px);transform:translateX(-50%) translateY(4px);max-width:150px;padding:4px 7px;border:1px solid rgba(201,167,119,.45);border-radius:5px;background:rgba(8,8,12,.92);color:#f3e6cf;font-family:'IM Fell English',serif;font-size:.78rem;line-height:1.1;text-align:center;white-space:normal;opacity:0;pointer-events:none;transition:opacity .18s ease,transform .18s ease;text-shadow:1px 1px 2px #000;z-index:20}.inv-slot:hover .inv-name-label,.inv-slot.active .inv-name-label{opacity:1;transform:translateX(-50%) translateY(0)}#eye-cursor{position:fixed;width:74px;height:74px;margin:-37px 0 0 -37px;border-radius:50%;z-index:3400;pointer-events:none;display:none;background:radial-gradient(circle at 50% 50%,rgba(130,220,255,.24) 0%,rgba(35,120,255,.16) 34%,transparent 60%);border:1px solid rgba(95,190,255,.72);box-shadow:0 0 18px rgba(70,170,255,.65),inset 0 0 18px rgba(30,100,255,.28)}#eye-cursor:before,#eye-cursor:after{content:'';position:absolute;left:50%;top:50%;background:rgba(160,230,255,.8);transform:translate(-50%,-50%)}#eye-cursor:before{width:48px;height:1px}#eye-cursor:after{width:1px;height:48px}body[data-tool=Olho_Nimue] #eye-cursor{display:block}body[data-tool=Olho_Nimue]{cursor:none}";
+n.id="investigation-ui-style",n.textContent="#info-side-panel{position:fixed;right:18px;top:68px;transform:none;width:320px;min-height:112px;padding:18px 20px;border:1px solid rgba(201,167,119,.42);border-radius:6px;background:rgba(10,10,15,.84);box-shadow:0 12px 34px rgba(0,0,0,.55);z-index:3200;pointer-events:none;overflow:hidden}#info-side-panel .info-copy{position:relative;color:#f3e6cf;font-family:'IM Fell English',serif;font-size:1.08rem;line-height:1.38;text-shadow:1px 1px 2px #000;opacity:1;transform:translateY(0);transition:opacity .28s ease,transform .28s ease}#info-side-panel .info-copy.leaving{opacity:0;transform:translateY(-12px)}#info-side-panel .info-copy.entering{opacity:0;transform:translateY(12px)}#clue-observation{position:fixed;left:50%;transform:translateX(-50%);max-width:min(680px,70vw);padding:10px 16px;border:1px solid rgba(201,167,119,.38);border-radius:6px;background:rgba(10,10,15,.82);color:#eadcc3;font-family:'IM Fell English',serif;font-size:1.04rem;line-height:1.35;text-align:center;text-shadow:1px 1px 2px #000;z-index:3060;pointer-events:none;display:none}#volume-control{position:fixed;top:16px;right:18px;z-index:3300;display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid rgba(201,167,119,.42);border-radius:6px;background:rgba(10,10,15,.84);box-shadow:0 8px 24px rgba(0,0,0,.45);color:#eadcc3;font-family:'IM Fell English',serif}#volume-control input{width:110px;accent-color:#c9a777}#resolve-runes-btn{position:fixed;top:58px;right:18px;z-index:3300;padding:8px 12px;border:1px solid rgba(201,167,119,.58);border-radius:6px;background:rgba(44,31,18,.9);color:#f3e6cf;font-family:'IM Fell English',serif;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.45)}#resolve-runes-btn:hover{border-color:#e5c27f;color:#fff}#assemble-lantern-btn{position:fixed;right:26px;bottom:112px;margin:0;padding:8px 12px;border:1px solid rgba(201,167,119,.62);border-radius:6px;background:rgba(28,24,18,.94);color:#f3e6cf;font-family:'IM Fell English',serif;font-size:1rem;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.45);z-index:3302;display:none}#assemble-lantern-btn:hover{border-color:#e5c27f;color:#fff}#close-clue-btn{position:fixed;top:18px;left:50%;transform:translateX(-50%);background:#961414e6;color:#fff;border:1px solid #ff4444;padding:12px 24px;border-radius:8px;cursor:pointer;font-family:Pirata One,cursive;font-size:1.2rem;pointer-events:auto;z-index:3302}#close-clue-btn:hover{background:#c81e1e}.inv-slot{position:relative}.inv-name-label{position:absolute;left:50%;bottom:calc(100% + 7px);transform:translateX(-50%) translateY(4px);max-width:150px;padding:4px 7px;border:1px solid rgba(201,167,119,.45);border-radius:5px;background:rgba(8,8,12,.92);color:#f3e6cf;font-family:'IM Fell English',serif;font-size:.78rem;line-height:1.1;text-align:center;white-space:normal;opacity:0;pointer-events:none;transition:opacity .18s ease,transform .18s ease;text-shadow:1px 1px 2px #000;z-index:20}.inv-slot:hover .inv-name-label,.inv-slot.active .inv-name-label{opacity:1;transform:translateX(-50%) translateY(0)}#eye-cursor{position:fixed;width:74px;height:74px;margin:-37px 0 0 -37px;border-radius:50%;z-index:3400;pointer-events:none;display:none;background:radial-gradient(circle at 50% 50%,rgba(130,220,255,.24) 0%,rgba(35,120,255,.16) 34%,transparent 60%);border:1px solid rgba(95,190,255,.72);box-shadow:0 0 18px rgba(70,170,255,.65),inset 0 0 18px rgba(30,100,255,.28)}#eye-cursor:before,#eye-cursor:after{content:'';position:absolute;left:50%;top:50%;background:rgba(160,230,255,.8);transform:translate(-50%,-50%)}#eye-cursor:before{width:48px;height:1px}#eye-cursor:after{width:1px;height:48px}body[data-tool=Olho_Nimue] #eye-cursor{display:block}body[data-tool=Olho_Nimue]{cursor:none}";
+n.textContent+="#gear-cursor{position:fixed;width:54px;height:54px;margin:-27px 0 0 -27px;border-radius:50%;z-index:3605;pointer-events:none;display:none;border:2px dashed rgba(224,194,120,.9);box-shadow:0 0 14px rgba(224,194,120,.55),inset 0 0 12px rgba(100,70,35,.45)}#gear-cursor:before,#gear-cursor:after{content:'';position:absolute;left:50%;top:50%;background:rgba(224,194,120,.9);transform:translate(-50%,-50%)}#gear-cursor:before{width:34px;height:2px}#gear-cursor:after{width:2px;height:34px}body[data-tool=Engrenagem] #gear-cursor{display:block}body[data-tool=Engrenagem]{cursor:none}";
+n.textContent+="#assembly-modal{position:fixed;inset:0;z-index:3350;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.48)}#assembly-dialog{width:min(520px,92vw);padding:18px;border:1px solid rgba(201,167,119,.55);border-radius:6px;background:rgba(11,10,13,.96);box-shadow:0 18px 50px rgba(0,0,0,.65);color:#f3e6cf;font-family:'IM Fell English',serif}#assembly-dialog h3{margin:0 0 10px;font-size:1.35rem;font-weight:400}#assembly-dialog p{margin:0 0 12px;color:#d9c7a8;line-height:1.35}.assembly-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:10px;max-height:260px;overflow:auto;margin:10px 0 12px}.assembly-choice{min-height:94px;padding:8px;border:1px solid rgba(201,167,119,.34);border-radius:6px;background:rgba(34,28,21,.78);color:#f3e6cf;font:inherit;cursor:pointer}.assembly-choice.selected{border-color:#7fdcff;box-shadow:0 0 14px rgba(77,190,255,.45);background:rgba(34,51,59,.82)}.assembly-icon{width:38px;height:38px;margin:0 auto 6px;border-radius:5px;background:center/contain no-repeat}.assembly-actions{display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-top:12px}.assembly-actions button{padding:7px 12px;border:1px solid rgba(201,167,119,.48);border-radius:5px;background:rgba(40,31,22,.92);color:#f3e6cf;font:inherit;cursor:pointer}.assembly-actions button:hover{border-color:#e5c27f;color:#fff}.assembly-feedback{min-height:22px;color:#f0c080}.assembly-feedback.success{color:#9ee6ff}";
+n.textContent+="#books-puzzle-modal,#hidden-room-modal{position:fixed;inset:0;z-index:3350;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.55)}#books-puzzle-dialog,#hidden-room-dialog{width:min(560px,92vw);padding:18px;border:1px solid rgba(201,167,119,.55);border-radius:6px;background:rgba(11,10,13,.96);box-shadow:0 18px 50px rgba(0,0,0,.65);color:#f3e6cf;font-family:'IM Fell English',serif}#books-puzzle-dialog h3,#hidden-room-dialog h3{margin:0 0 10px;font-size:1.35rem;font-weight:400}#books-puzzle-dialog p,#hidden-room-dialog p{margin:0 0 12px;color:#d9c7a8;line-height:1.35}.books-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin:12px 0}.book-choice{height:112px;border:1px solid rgba(201,167,119,.42);border-radius:4px;background:linear-gradient(90deg,#302013,#4b2e18 45%,#22150e);color:#f7e3bd;font:1.5rem 'IM Fell English',serif;cursor:pointer;box-shadow:inset 6px 0 0 rgba(0,0,0,.18)}.book-choice.selected{border-color:#7fdcff;color:#9ee6ff;box-shadow:0 0 12px rgba(77,190,255,.4),inset 6px 0 0 rgba(0,0,0,.2)}#book-sequence{min-height:34px;padding:7px 9px;border:1px solid rgba(201,167,119,.28);border-radius:5px;background:rgba(0,0,0,.24);letter-spacing:6px}.book-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:12px}.book-actions button,#hidden-room-btn{padding:7px 12px;border:1px solid rgba(201,167,119,.48);border-radius:5px;background:rgba(40,31,22,.92);color:#f3e6cf;font:inherit;cursor:pointer}.book-actions button:hover,#hidden-room-btn:hover{border-color:#e5c27f;color:#fff}#book-feedback{min-height:22px;color:#f0c080}#book-feedback.success{color:#9ee6ff}#hidden-room-btn{position:fixed;left:50%;top:18px;bottom:auto;transform:translateX(-50%);z-index:3300;display:none;font-family:'IM Fell English',serif;font-size:1rem;box-shadow:0 8px 24px rgba(0,0,0,.45)}";
+n.textContent+="#inventory-panel{position:absolute;right:20px;bottom:20px;left:auto;top:auto;width:max-content;max-width:calc(100vw - 360px);padding:1rem 2rem 1rem 2.8rem;display:flex;gap:40px;align-items:flex-end;overflow-x:auto;overflow-y:visible}#inventory-panel .inventory-section{flex:0 0 auto}#inventory-toggle{position:absolute;left:10px;top:10px;width:28px;height:28px;padding:0;border:1px solid rgba(201,167,119,.48);border-radius:5px;background:rgba(40,31,22,.92);color:#f3e6cf;font:1rem 'IM Fell English',serif;cursor:pointer;z-index:2}#inventory-toggle:hover{border-color:#e5c27f;color:#fff}#inventory-panel.minimized{padding:.65rem .85rem;gap:0;min-width:52px;max-width:none;overflow:hidden}#inventory-panel.minimized .inventory-section{display:none}";
+n.textContent+="#books-puzzle-dialog{width:min(680px,94vw)}.book-targets{display:flex;gap:8px;margin:10px 0 8px}.book-target{padding:6px 10px;border:1px solid rgba(201,167,119,.42);border-radius:5px;background:rgba(38,28,19,.9);color:#f3e6cf;font:inherit;cursor:pointer}.book-target.selected{border-color:#7fdcff;color:#9ee6ff}.book-target.burned{opacity:.45;text-decoration:line-through;cursor:not-allowed}#book-status{margin:6px 0 10px;color:#d9c7a8}.book-current-row,.book-history-row{display:grid;grid-template-columns:repeat(5,42px);gap:6px;margin:8px 0}.book-slot,.book-tile{height:42px;border:1px solid rgba(201,167,119,.38);border-radius:4px;background:rgba(0,0,0,.34);display:flex;align-items:center;justify-content:center;font:1.35rem 'IM Fell English',serif;color:#f7e3bd}.book-tile.green{background:#275b36;border-color:#6bd486;color:#f5fff5}.book-tile.yellow{background:#756022;border-color:#e0c45a;color:#fff6cc}.book-tile.neutral{background:#1c1b1a;border-color:#555;color:#b9ad9c}.books-grid{grid-template-columns:repeat(8,1fr)}.book-choice{height:58px;font-size:1.25rem}.book-choice.used{opacity:.42;cursor:not-allowed}.book-choice:disabled,.book-target:disabled{pointer-events:none}#book-history{max-height:170px;overflow:auto;margin-top:8px;padding-right:4px}.book-history-word{margin-top:8px}.book-history-word strong{display:block;margin-bottom:2px;color:#d9c7a8}.book-history-empty{color:#9f907b;font-style:italic}";
+n.textContent+="#hidden-room-scene{position:absolute;inset:0;z-index:7;display:none;background:center/cover no-repeat url('/alchemist_room.png');pointer-events:auto}#hidden-room-scene:before{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.18),rgba(0,0,0,.42));pointer-events:none}.hidden-room-title{position:absolute;left:22px;top:18px;padding:9px 13px;border:1px solid rgba(201,167,119,.46);border-radius:6px;background:rgba(9,8,12,.72);color:#f3e6cf;font-family:'IM Fell English',serif;text-shadow:1px 1px 2px #000;z-index:2}.hidden-room-back{position:absolute;left:22px;top:68px;z-index:2;padding:8px 12px;border:1px solid rgba(201,167,119,.55);border-radius:6px;background:rgba(28,22,17,.88);color:#f3e6cf;font-family:'IM Fell English',serif;cursor:pointer;max-width:min(320px,42vw)}.hidden-room-back:hover{border-color:#e5c27f;color:#fff}";
+n.textContent+="#hotspot-editor-panel{position:fixed;left:18px;top:96px;width:300px;z-index:3600;display:none;padding:12px;border:1px solid rgba(201,167,119,.52);border-radius:6px;background:rgba(8,8,12,.9);box-shadow:0 10px 28px rgba(0,0,0,.55);color:#f3e6cf;font-family:'IM Fell English',serif}#hotspot-editor-panel h3{margin:0 0 6px;font-size:1.05rem;font-weight:400}#hotspot-editor-coords{min-height:54px;max-height:120px;overflow:auto;margin:8px 0;padding:7px;border:1px solid rgba(201,167,119,.28);border-radius:4px;background:rgba(0,0,0,.35);white-space:pre-wrap;font:12px Consolas,monospace;color:#e8d6b7}#hotspot-editor-panel button{margin-right:6px;padding:6px 8px;border:1px solid rgba(201,167,119,.48);border-radius:4px;background:rgba(40,31,22,.92);color:#f3e6cf;font:inherit;cursor:pointer}#hotspot-editor-panel button:hover{border-color:#e5c27f;color:#fff}.hotspot-editor-marker{position:absolute;width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;background:lime;box-shadow:0 0 8px rgba(0,255,0,.8);pointer-events:none;z-index:999}";
+n.textContent+="#secret-hotspots-svg{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none}.hidden-room-hotspot{fill:#0000;cursor:pointer;pointer-events:visiblePainted;transition:all .2s ease}.hidden-room-hotspot:hover{filter:drop-shadow(0 0 3px rgba(255,215,0,.3));fill:#ffd70005}.xylo-modal{position:fixed;inset:0;z-index:3450;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.58)}.xylo-modal.inventory-friendly{pointer-events:none;background:rgba(0,0,0,.28)}.xylo-modal.inventory-friendly .xylo-dialog{pointer-events:auto}.xylo-dialog{width:min(680px,94vw);max-height:86vh;overflow:auto;padding:18px;border:1px solid rgba(201,167,119,.55);border-radius:6px;background:rgba(11,10,13,.97);box-shadow:0 18px 50px rgba(0,0,0,.65);color:#f3e6cf;font-family:'IM Fell English',serif}.xylo-dialog h3{margin:0 0 10px;font-size:1.38rem;font-weight:400}.xylo-dialog p,.xylo-dialog pre{color:#e2d0b0;line-height:1.42}.xylo-dialog pre{white-space:pre-wrap;font:1rem 'IM Fell English',serif}.xylo-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:14px}.xylo-actions button,.lock-btn{padding:7px 12px;border:1px solid rgba(201,167,119,.48);border-radius:5px;background:rgba(40,31,22,.92);color:#f3e6cf;font:inherit;cursor:pointer}.xylo-actions button:hover,.lock-btn:hover{border-color:#e5c27f;color:#fff}.lantern-view{height:min(56vh,430px);margin:12px 0 6px;border:1px solid rgba(201,167,119,.28);border-radius:6px;background:center/contain no-repeat rgba(0,0,0,.28);cursor:default}.lantern-view.front{background-image:url('/Lamparina.png')}.lantern-view.back{background-image:radial-gradient(circle at center,rgba(80,170,255,.18),transparent 45%),url('/Fundo_lamparina.png');cursor:pointer}.lantern-flip{display:block;margin:0 auto 10px;width:44px;height:34px;padding:0;border:1px solid rgba(201,167,119,.48);border-radius:5px;background:rgba(40,31,22,.92);color:#f3e6cf;font:1.55rem serif;cursor:pointer}.lantern-flip:hover{border-color:#e5c27f;color:#fff}.lantern-slot{display:none!important;margin:0!important;width:0!important;min-height:0!important;height:0!important;padding:0!important;border:0!important;overflow:hidden!important}.lock-row{display:flex;gap:8px;justify-content:center;margin:16px 0}.lock-btn{width:60px;height:76px;font-size:0;color:transparent}.lock-btn:after{content:'';display:block;width:26px;height:26px;margin:auto;border-radius:50%;background:currentColor}.lock-btn.open{background:rgba(38,84,48,.9);border-color:#6bd486;color:#6bd486}.lock-btn.closed{background:rgba(70,31,28,.92);border-color:#c96b60;color:#c96b60}.lock-feedback{min-height:24px;color:#f0c080;text-align:center}.secret-clue-img{width:220px;height:220px;margin:10px auto;background:center/contain no-repeat url('/vintage_paper.png')}#secret-lantern-feedback{display:none!important}";
 document.head.appendChild(n)}
 function Hm(){
 Gm();
@@ -14087,7 +14102,20 @@ n=document.createElement("div"),n.id="volume-control",n.innerHTML='<span>Som</sp
 n.querySelector("input").addEventListener("input",e=>{qe.gain.value=parseFloat(e.target.value)})}
 let e=document.getElementById("eye-cursor");
 e||(e=document.createElement("div"),e.id="eye-cursor",document.body.appendChild(e));
+let t=document.getElementById("gear-cursor");
+t||(t=document.createElement("div"),t.id="gear-cursor",document.body.appendChild(t));
+ensureInventoryToggle();
 Qm()}
+function ensureInventoryToggle(){
+let n=document.getElementById("inventory-panel");
+if(!n||document.getElementById("inventory-toggle"))return;
+let e=document.createElement("button");
+e.type="button",e.id="inventory-toggle",e.textContent="−",e.title="Minimizar inventário",e.onclick=()=>toggleInventoryPanel(),n.appendChild(e)}
+function toggleInventoryPanel(){
+let n=document.getElementById("inventory-panel"),e=document.getElementById("inventory-toggle");
+if(!n||!e)return;
+let t=n.classList.toggle("minimized");
+e.textContent=t?"+":"−",e.title=t?"Expandir inventário":"Minimizar inventário"}
 function Qm(){
 if(!ri||document.getElementById("resolve-runes-btn"))return;
 const n=document.createElement("button");
@@ -14144,6 +14172,122 @@ const to=`Irmão, A nossa caravana partiu às pressas. O guarda do Rei Alistair 
 caravana:"fuga",guarda:"assassino",jornada:"Emenda",esquecida:"rompida",tecido:"segredo",horizonte:"céu",rota:"costura",falha:"ruptura",pagamento:"mapa",estrada:"Tumba",cabana:"cripta",guia:"Cartógrafo",destino:"fim"}
 ;
 const FORJA_TEXT="As suspeitas de Edgar eram fundadas. O Arcano do Sol não está morto; ele está acorrentado na Forja Real, sendo forçado a derreter a própria essência de Axioma para forjar uma arma mortal. Se eles terminarem a Máquina, Alistair terá poder suficiente para controlar toda Axioma.";
+const PH={Mapa:"/placeholder_mapa_axioma.png",Bag:"/placeholder_bag_holding.png",Nucleo:"/placeholder_nucleo_arcano.png",CartaCorvo:"/placeholder_carta_corvo.svg",RetratoNox:"/placeholder_retrato_familia_nox.png",RetratoNoxOculto:"/placeholder_retrato_familia_nox_oculto.png",Polvora:"/placeholder_saco_polvora.png",Moedas:"/placeholder_saco_moedas_200.png",Disfaces:"/placeholder_kit_disfaces.png",ChaveMisteriosa:"/placeholder_chave_misteriosa.png",Macaco:"/Propototipo_bomba.png",Engrenagem:"/placeholder_engrenagem.png",Gatilho:"/placeholder_gatilho.png",MoedaCorvo:"/placeholder_moeda_corvo.png",SimioRuina:"/bomba_macaco.png",Lamparina:"/Lamparina.png",FundoLamparina:"/Fundo_lamparina.png",PedraYoun:"/Pedra_Youn.png",Lente:"/Lente.png",CarcacaLanterna:"/Carcaca_lanterna.png"};
+const LANTERN_PARTS=["Corpo_da_Lanterna","Lente_de_Cristal","Nucleo_Arcano"],MONKEY_BOMB_PARTS=["Macaco_Mecanico_Inacabado","Saco_Polvora_Potencializada","Gatilho"],LanternItems={
+Corpo_da_Lanterna:{id:"Corpo_da_Lanterna",type:"loot",title:"Corpo da Lanterna",icon:PH.CarcacaLanterna,dim:[1.4,1.4],sound:"metal",flyOrigin:null},
+Lente_de_Cristal:{id:"Lente_de_Cristal",type:"loot",title:"Lente de Cristal",icon:PH.Lente,dim:[1,1],sound:"metal",flyOrigin:null},
+Nucleo_Arcano:{id:"Nucleo_Arcano",type:"loot",title:"Núcleo Arcano",icon:PH.Nucleo,dim:[1,1],sound:"magic",flyOrigin:null},
+Lanterna:{id:"Lanterna",type:"tool",title:"Lanterna do Sol",icon:"/lantern.png",mat:null,dim:[2,2.5],sound:"metal",flyOrigin:new D(0,0,1)}};
+const CraftedItems={Simio_Ruina:{id:"Simio_Ruina",type:"loot",title:"Símio da Ruína",icon:PH.SimioRuina,dim:[1.4,1.4],sound:"metal",flyOrigin:null}},CorvoCoinItem={id:"Moeda_Corvo",type:"loot",title:"Moeda do Corvo",icon:PH.MoedaCorvo,dim:[1,1],sound:"metal",flyOrigin:null};
+const BOOK_PUZZLE_WORDS=["RISCO","NIMUE","TUMBA"],BOOK_PUZZLE_LETTERS="RISCONIMUETUMBAFARLPEODVXHQSZ".split("").map((n,e)=>({id:"book-"+e,letter:n}));
+let bookPuzzleSelection=[],bookPuzzleLetters=[...BOOK_PUZZLE_LETTERS];
+const CORVO_CARTA_TEXT=`A quem carregar a Moeda de Vidro Negro,
+
+Se esta carta chegou a você, é porque busca o inalcançável. Nós, do Sindicato do Corvo de Vidro, negociamos raridades e maravilhas que não estão em nenhum mercado comum.
+
+Mostre a sua moeda nos seguintes refúgios para encontrar nossos mercadores:
+
+Enseada Torta: Nas brumas da costa, procure o Capitão Sal-Sujo.
+Tumba do Cartógrafo: Escondida nas planícies, encontre Madame Fio-de-Ouro.
+O Navio-Sino: Encalhado no mar central, busque O Escafandrista.
+Platô das Nuvens Presas: Na tempestade da serrania, negocie com o Mercador de Cinzas.
+Colunas de Vidro: Nas ruínas do deserto profundo, aguarde pela Víbora de Vidro.
+Catedral do Diapasão: No subsolo do fim do mundo, desça até A Engrenagem Quebrada.
+
+Queime este pergaminho. O Corvo de Vidro sempre observa.
+- Um aliado nas sombras.`;
+const HIDDEN_ROOM_HOTSPOTS=[
+{id:"mapa-axioma",title:"Mapa de Axioma",points:[[184,0],[192,299],[444,262],[447,1]],hint:"Um mapa antigo de Axioma está preso à parede.",item:{id:"Mapa_Axioma",type:"loot",title:"Mapa de Axioma",icon:PH.Mapa,sound:"paper",flyOrigin:new D(-3,4,1)}},
+{id:"bag-holding",title:"Bag Holding",points:[[1725,880],[1729,825],[1759,770],[1817,799],[1857,818],[1867,878],[1869,917],[1826,943]],hint:"Uma bolsa estranhamente profunda repousa no canto.",item:{id:"Bag_Holding",type:"loot",title:"Bag Holding",icon:PH.Bag,sound:"paper",flyOrigin:new D(5,-4,1)}},
+{id:"lanterna-secreta",title:"Lanterna",points:[[472,449],[437,578],[463,684],[424,735],[424,788],[536,773],[507,683],[511,575]],hint:"Uma lanterna desmontada revela um encaixe mecânico no verso.",action:"lantern"},
+{id:"carta-corvo",title:"Carta do Sociedade do corvo",points:[[1467,73],[1544,74],[1546,241],[1467,235]],hint:"Uma carta selada com a marca do Corvo de Vidro.",action:"document"},
+{id:"retrato-nox",title:"Retrato Familia Nox",points:[[769,428],[831,428],[831,575],[769,575]],hint:"Um retrato gasto da Família Nox observa o quarto.",action:"portrait"},
+{id:"polvora-potencializada",title:"Saco de Pólvora potencializada",points:[[1410,874],[1388,917],[1404,948],[1437,958],[1459,931],[1436,877],[1428,837],[1402,840]],hint:"Um saco de pólvora com brilho alquímico.",item:{id:"Saco_Polvora_Potencializada",type:"loot",title:"Saco de Pólvora potencializada",icon:PH.Polvora,sound:"metal",flyOrigin:new D(3,-4,1)}},
+{id:"saco-moedas-200",title:"Saco de Moedas (200)",points:[[312,724],[284,822],[348,831],[390,795],[374,736],[347,716],[348,664],[307,684]],hint:"Um saco pesado de moedas foi esquecido entre as caixas.",item:{id:"Saco_Moedas_200",type:"loot",title:"Saco de Moedas (200)",icon:PH.Moedas,sound:"metal",flyOrigin:new D(-4,-3,1)}},
+{id:"kit-disfaces",title:"Kit de Disfaces",points:[[1442,418],[1441,464],[1492,494],[1606,501],[1613,442],[1485,434],[1448,410]],hint:"Um kit de disfarces cuidadosamente dobrado.",item:{id:"Kit_de_Disfaces",type:"loot",title:"Kit de Disfaces",icon:PH.Disfaces,sound:"paper",flyOrigin:new D(3,1,1)}},
+{id:"grande-bau",title:"Grande Baú",points:[[606,219],[598,298],[590,440],[626,458],[750,432],[809,402],[845,295],[813,200]],hint:"Um grande baú com oito cadeados conectados.",action:"lockChest"},
+{id:"pagina",title:"Página do Quarto Escondido",points:[[1260,555],[1355,560],[1362,650],[1252,645]],hint:"Uma página dobrada repousa entre instrumentos antigos.",item:{id:"Pagina_do_Quarto_Escondido",type:"loot",title:"Página do Quarto Escondido",icon:"/vintage_paper.png",sound:"paper",flyOrigin:new D(2,1,1)}}];
+const MAIN_EXTRA_HOTSPOTS=[
+{id:"hotspot-macaco-mecanico",title:"Macaco Mecanico Inacabado",points:[[1,714],[19,687],[99,690],[125,757],[128,828],[61,877],[12,873],[-3,715]],hint:"Um pequeno macaco mecânico inacabado está largado na bancada.",item:{id:"Macaco_Mecanico_Inacabado",type:"loot",title:"Macaco Mecanico Inacabado",icon:PH.Macaco,sound:"metal",flyOrigin:new D(-6,-3,1)}},
+{id:"hotspot-engrenagem",title:"Engrenagem",points:[[1798,415],[1786,448],[1803,474],[1833,484],[1863,455],[1837,411]],hint:"Uma engrenagem avulsa ainda parece utilizável.",item:{id:"Engrenagem",type:"tool",title:"Engrenagem",icon:PH.Engrenagem,sound:"metal",flyOrigin:new D(5,1,1)}},
+{id:"hotspot-gatilho",title:"Gatilho",points:[[1394,828],[1392,899],[1540,949],[1546,880]],hint:"Um gatilho metálico repousa entre peças soltas.",item:{id:"Gatilho",type:"loot",title:"Gatilho",icon:PH.Gatilho,sound:"metal",flyOrigin:new D(3,-4,1)}}];
+function ensureTableState(){
+const n=window.GameState||(window.GameState={states:{},inventory:[]});
+n.states=n.states||{},Array.isArray(n.inventory)||(n.inventory=[]),n.states.currentRoom=n.states.currentRoom||"Sala_Principal";
+return n}
+function isHiddenRoomAccessMarker(n){
+let e=typeof n==="string"?n:n&&(n.id||n.title)||"";
+return e==="Quarto_Escondido"||e==="Quarto Escondido"}
+function scrubHiddenRoomAccessFromInventory(){
+["tools","clues","loot"].forEach(n=>It[n]=It[n].filter(e=>!isHiddenRoomAccessMarker(e)));
+window.GameState&&Array.isArray(window.GameState.inventory)&&(window.GameState.inventory=window.GameState.inventory.filter(n=>!isHiddenRoomAccessMarker(n)));
+vt.collectedItems=(vt.collectedItems||[]).filter(n=>!isHiddenRoomAccessMarker(n))}
+function cloneNetworkItem(n){
+return n?{id:n.id,type:n.type,title:n.title,icon:n.icon,dim:n.dim,visual:n.visual,sound:n.sound,onyxOpen:n.onyxOpen,forjaText:n.forjaText}:null}
+function networkBuildSnapshot(){
+const n=ensureTableState(),e=n.states||{};
+scrubHiddenRoomAccessFromInventory();
+return{room:e.currentRoom||"Sala_Principal",inventory:{tools:It.tools.map(cloneNetworkItem),clues:It.clues.map(cloneNetworkItem),loot:It.loot.map(cloneNetworkItem)},gameState:{states:JSON.parse(JSON.stringify(e)),inventory:[...n.inventory].filter(t=>!isHiddenRoomAccessMarker(t))},collectedItems:[...(vt.collectedItems||[])],collectedHotspots:[...(e.collectedHotspots||[])]}}
+function findConfiguredItem(n){
+let e=[...Object.values(Ts||{}),...Object.values(LanternItems),...Object.values(CraftedItems),CorvoCoinItem,{id:"Chave_Misteriosa",type:"loot",title:"Chave misteriosa",icon:PH.ChaveMisteriosa,sound:"metal"},{id:"Pedra_Ioun_Intelecto",type:"loot",title:"Pedra de Ioun do Intelecto",icon:PH.PedraYoun,dim:[1.2,1.2],sound:"magic"},{id:"Carta_Forja",type:"clue",title:"Carta da Forja Real",icon:"/vintage_paper.png",dim:[2.5,3.5],sound:"paper",forjaText:FORJA_TEXT}];
+HIDDEN_ROOM_HOTSPOTS.concat(MAIN_EXTRA_HOTSPOTS).forEach(t=>t.item&&e.push(t.item));
+return e.find(t=>t&&t.id===n)}
+function reviveNetworkItem(n,e=null){
+if(!n)return null;
+let t=findConfiguredItem(n.id)||{},i={...t,...n,type:n.type||t.type||e||"loot"};
+i.id==="Lanterna"&&(i.mat=Ts["hotspot-lanterna"]&&Ts["hotspot-lanterna"].mat||er("/lantern.png"));
+i.id==="Carta_Forja"&&(i.mat=er("/vintage_paper.png"),i.forjaText=FORJA_TEXT);
+return i}
+function networkAddItemById(n){
+if(isHiddenRoomAccessMarker(n)){
+const e=ensureTableState();
+e.states.hiddenRoomUnlocked=!0,e.states.quartoEscondidoDesbloqueado=!0,updateHiddenRoomAccess&&updateHiddenRoomAccess();
+return}
+if(hasInv(n))return;
+if(n==="Olho_Nimue"){
+let e={id:"Olho_Nimue",type:"tool",title:"Olho de Ônix (Ativo)",icon:"/onyx_eye.png",dim:[1.2,1.2],sound:"magic",onyxOpen:!0};
+It.tools.push(e),hasInv("Pedra_Ioun_Intelecto")||It.loot.push(reviveNetworkItem({id:"Pedra_Ioun_Intelecto"},"loot")),ensureTableState().inventory=[...new Set([...window.GameState.inventory,"Olho_Nimue","Pedra_Ioun_Intelecto"])],Ri();
+return}
+if(n==="Lanterna")LANTERN_PARTS.forEach(removeDirect);
+if(n==="Simio_Ruina")MONKEY_BOMB_PARTS.forEach(removeDirect);
+if(n==="Carta_Forja")removeDirect("Olho_Nimue");
+let e=reviveNetworkItem({id:n});
+if(!e)return;
+let t=e.type==="tool"?"tools":e.type==="clue"?"clues":"loot";
+It[t].push(e),ensureTableState().inventory.includes(e.id)||window.GameState.inventory.push(e.id),Ri()}
+function applyNetworkSnapshot(n){
+if(!n)return;
+const e=ensureTableState();
+n.collectedItems&&(n.collectedItems=n.collectedItems.filter(t=>!isHiddenRoomAccessMarker(t)));
+n.gameState&&(e.states={...e.states,...(n.gameState.states||{})},e.inventory=[...(n.gameState.inventory||[])]);
+if(n.inventory){
+It.tools=(n.inventory.tools||[]).filter(t=>!isHiddenRoomAccessMarker(t)).map(t=>reviveNetworkItem(t,"tool")).filter(Boolean);
+It.clues=(n.inventory.clues||[]).filter(t=>!isHiddenRoomAccessMarker(t)).map(t=>reviveNetworkItem(t,"clue")).filter(Boolean);
+It.loot=(n.inventory.loot||[]).filter(t=>!isHiddenRoomAccessMarker(t)).map(t=>reviveNetworkItem(t,"loot")).filter(Boolean);
+e.inventory=[...new Set([...It.tools,...It.clues,...It.loot].map(t=>t.id))]}
+scrubHiddenRoomAccessFromInventory();
+markNetworkCollected([...(n.collectedItems||[]),...(n.collectedHotspots||[])]);
+applyTableRoom(n.room||e.states.currentRoom||"Sala_Principal"),Ri(),updateHiddenRoomAccess&&updateHiddenRoomAccess(),updateOnlineUi()}
+function markNetworkCollected(n){
+const e=new Set(n.filter(Boolean));
+HIDDEN_ROOM_HOTSPOTS.concat(MAIN_EXTRA_HOTSPOTS).forEach(t=>{t.item&&e.has(t.item.id)&&e.add(t.id)});
+e.forEach(t=>{let i=document.getElementById(t);i&&i.classList.add("collected")})}
+function applyTableRoom(n){
+const e=ensureTableState();
+e.states.currentRoom=n;
+if(n==="Quarto_Escondido"){
+e.states.hiddenRoomUnlocked=!0,e.states.quartoEscondidoDesbloqueado=!0,ensureHiddenRoomScene().style.display="block",document.body.setAttribute("data-room","Quarto_Escondido")}
+else{
+let t=document.getElementById("hidden-room-scene");
+t&&(t.style.display="none"),document.body.setAttribute("data-room","Sala_Principal")}
+let i=document.querySelector("#hidden-room-scene .hidden-room-back");
+i&&(i.style.display="block");
+updateHiddenRoomAccess&&updateHiddenRoomAccess()}
+function setTableRoom(n,e=!1){
+const t=ensureTableState();
+if(n==="Quarto_Escondido"&&!(t.states.hiddenRoomUnlocked||t.states.quartoEscondidoDesbloqueado)){Qo("O Quarto Escondido ainda não foi desbloqueado.");updateOnlineUi();return!1}
+applyTableRoom(n),e&&ri&&dr();
+return!0}
 function io(n,e,t){
 const i=document.getElementById(n),r=i.getContext("2d");
 r.clearRect(0,0,i.width,i.height);
@@ -14341,7 +14485,7 @@ value:0}
 	`,fragmentShader:em,transparent:!0,glslVersion:ua}
 ),dim:[1.2,1.2],sound:"magic",flyOrigin:new D(-2,2,1)}
 ,"hotspot-placa":{
-id:"Moeda_Salitria",type:"clue",title:"A Moeda de Salítria",icon:"/sol_coin.png",mat:er("/sol_coin.png"),dim:[1,1],sound:"metal",flyOrigin:new D(2,4,1),sceneCollectRequireTool:"ChaveDeFenda",sceneCollectHintMsg:"Há algo metálico tilintando atrás desta grade, mas o painel está preso por minúsculos parafusos antigos. Meus dedos não cabem ali."}
+id:"Moeda_Salitria",type:"tool",title:"A Moeda de Salítria",icon:"/sol_coin.png",mat:er("/sol_coin.png"),dim:[1,1],sound:"metal",flyOrigin:new D(2,4,1),sceneCollectRequireTool:"ChaveDeFenda",sceneCollectHintMsg:"Há algo metálico tilintando atrás desta grade, mas o painel está preso por minúsculos parafusos antigos. Meus dedos não cabem ali."}
 }
 ,document.querySelectorAll(".hotspot").forEach(n=>{
 n.addEventListener("click",e=>tm(e.target))}
@@ -14354,6 +14498,25 @@ let Et=null,mn=null,oo=!1,rr=[];
 const invSeen={tools:new Set,clues:new Set,loot:new Set};
 const lo=document.getElementById("lens-cursor"),co=document.getElementById("lantern-cursor"),uo=new Ip,ns=new Ge;
 let edgar2dState=null;
+let corvoLetterState=null,noxPortraitState=null;
+const clueImageCache={};
+function getClueImage(n,e){
+let t=clueImageCache[n];
+if(t)return t.complete&&e&&e(),t;
+t=new Image,t.onload=()=>e&&e(),t.src=n,clueImageCache[n]=t;
+return t}
+function setInspectCanvasAspect(n,e){
+const t=Math.min(window.devicePixelRatio||1,2),i=window.innerWidth*.7,r=window.innerHeight*.7;
+let s=Math.min(i*e,r*e,i),o=s/e;
+n.style.width=s+"px",n.style.height=o+"px",n.width=Math.round(s*t),n.height=Math.round(o*t);
+return t}
+function drawCoverImage(n,e,t,i){
+if(e&&e.complete&&e.naturalWidth)n.drawImage(e,0,0,t,i);
+else n.fillRect(0,0,t,i)}
+function drawMultilineText(n,e,t,i,r,s,o){
+n.font=s,n.fillStyle=o,n.textBaseline="top";
+let a=i;
+e.split("\n").forEach(l=>{if(!l.trim()){a+=r*.72;return}let c="",u=l.split(/\s+/);u.forEach(d=>{let p=c?c+" "+d:d;n.measureText(p).width>t&&c?(n.fillText(c,0,a),a+=r,c=d):c=p}),c&&(n.fillText(c,0,a),a+=r)})}
 function om(n){
 const e=new Image;
 return e.onload=()=>{edgar2dState&&edgar2dState.staticText&&edgar2dState.canvas?qm(edgar2dState.canvas,edgar2dState.staticText):pm()},e.src=n,e}
@@ -14377,7 +14540,7 @@ function Km(n){
 Gm();
 let e=document.getElementById("clue-observation");
 if(!e)e=document.createElement("div"),e.id="clue-observation",document.body.appendChild(e);
-e.textContent=n.id==="Carta_Edgar"?"A carta conserva a caligrafia de Edgar. Ferramentas certas podem separar tinta, papel e segredo.":n.id==="Carta_Forja"?"A carta da Forja Real confirma que o segredo de Axioma está sendo transformado em arma.":n.id==="Olho_Nimue"?(fm(n)?"O olho desperto pulsa em azul, como se reconhecesse um mecanismo arcano adiante.":"A superfície de ônix parece absorver a luz. Mire a Lanterna no centro para testar a íris."):("Observando: "+(n.title||"pista"));
+e.textContent=n.id==="Carta_Edgar"?"A carta conserva a caligrafia de Edgar. Ferramentas certas podem separar tinta, papel e segredo.":n.id==="Carta_Forja"?"A carta da Forja Real confirma que o segredo de Axioma está sendo transformado em arma.":n.id==="Carta_Sociedade_Corvo"?"A carta do Corvo de Vidro parece reagir à luz de forma instável.":n.id==="Retrato_Familia_Nox"?"A moldura conserva camadas de tinta antigas. A luz pode revelar o que ficou por baixo.":n.id==="Olho_Nimue"?(fm(n)?"O olho desperto pulsa em azul, como se reconhecesse um mecanismo arcano adiante.":"A superfície de ônix parece absorver a luz. Mire a Lanterna no centro para testar a íris."):("Observando: "+(n.title||"pista"));
 e.style.display="block",requestAnimationFrame(Lm)}
 function Lm(){
 let n=document.getElementById("clue-observation"),e=document.getElementById("clue-2d-view");
@@ -14432,6 +14595,51 @@ function rm(n){
 const e=am("canvas");
 edgar2dState=edgar2dState||{paper:om("/vintage_paper.png"),island:om("/islandmap.png"),point:null,layout:null};
 edgar2dState.canvas=e,edgar2dState.active=!1,edgar2dState.staticText=FORJA_TEXT,e.style.display="block",e.className="",e.onmousemove=null,e.onmouseleave=null,lm(e),qm(e,FORJA_TEXT)}
+function openNoxPortraitInspect(n){
+const e=am("canvas");
+edgar2dState&&(edgar2dState.active=!1),noxPortraitState=noxPortraitState||{point:null};
+noxPortraitState.canvas=e,noxPortraitState.base=getClueImage(PH.RetratoNox,renderNoxPortrait),noxPortraitState.hidden=getClueImage(PH.RetratoNoxOculto,renderNoxPortrait),e.style.display="block",e.className="",e.onmousemove=t=>{noxPortraitState.point=cm(e,t),renderNoxPortrait()},e.onmouseleave=()=>{noxPortraitState.point=null,renderNoxPortrait()},setInspectCanvasAspect(e,.78),renderNoxPortrait()}
+function renderNoxPortrait(){
+if(!noxPortraitState||!noxPortraitState.canvas)return;
+const n=noxPortraitState.canvas,e=n.getContext("2d"),t=n.width,i=n.height,r=noxPortraitState.point;
+e.clearRect(0,0,t,i),e.fillStyle="#1a1511",drawCoverImage(e,noxPortraitState.base,t,i);
+if(Et==="Lanterna"&&r&&r.inside&&noxPortraitState.hidden&&noxPortraitState.hidden.complete){
+let s=Math.min(t,i)*.22,o=e.createRadialGradient(r.x,r.y,0,r.x,r.y,s),a=document.createElement("canvas"),l=a.getContext("2d");
+a.width=t,a.height=i,l.drawImage(noxPortraitState.hidden,0,0,t,i),o.addColorStop(0,"rgba(255,255,255,1)"),o.addColorStop(.7,"rgba(255,255,255,.92)"),o.addColorStop(1,"rgba(255,255,255,0)"),l.globalCompositeOperation="destination-in",l.fillStyle=o,l.fillRect(0,0,t,i),e.drawImage(a,0,0),e.save(),e.strokeStyle="rgba(120,210,255,.58)",e.lineWidth=Math.max(2,t*.004),e.beginPath(),e.arc(r.x,r.y,s*.74,0,Math.PI*2),e.stroke(),e.restore()}
+Lm()}
+function openCorvoInspect(n){
+const e=am("canvas");
+edgar2dState=edgar2dState||{paper:om("/vintage_paper.png"),island:om("/islandmap.png"),point:null,layout:null},edgar2dState.paper=getClueImage("/vintage_paper.png",()=>{edgar2dState.paperClean=null,renderCorvoLetter()}),edgar2dState.active=!1,corvoLetterState=corvoLetterState||{erased:[],warningShown:!1,burnAllowed:!1,confirming:!1,coinRevealed:!1};
+corvoLetterState.canvas=e,e.style.display="block",e.className="",e.onmousemove=t=>{corvoLetterState.point=cm(e,t),Et==="Lanterna"&&corvoLetterState.point.inside&&handleCorvoLantern(corvoLetterState.point),renderCorvoLetter()},e.onmouseleave=()=>{corvoLetterState.point=null,renderCorvoLetter()},lm(e),renderCorvoLetter()}
+function renderCorvoLetter(){
+if(!corvoLetterState||!corvoLetterState.canvas)return;
+const n=corvoLetterState.canvas,e=n.getContext("2d"),t=n.width,i=n.height;
+e.clearRect(0,0,t,i),mm(e,t,i);
+let r=document.createElement("canvas"),s=r.getContext("2d");
+r.width=t,r.height=i,s.translate(t*.105,i*.11);
+let o=Math.round(t*.033),a=Math.round(o*1.22);
+drawMultilineText(s,CORVO_CARTA_TEXT,t*.79,0,a,o+'px "IM Fell English", serif',"#070301");
+corvoLetterState.erased.forEach(l=>{let c=s.createRadialGradient(l.x-t*.105,l.y-i*.11,0,l.x-t*.105,l.y-i*.11,l.r);c.addColorStop(0,"rgba(0,0,0,1)"),c.addColorStop(.74,"rgba(0,0,0,.95)"),c.addColorStop(1,"rgba(0,0,0,0)"),s.globalCompositeOperation="destination-out",s.fillStyle=c,s.beginPath(),s.arc(l.x-t*.105,l.y-i*.11,l.r,0,Math.PI*2),s.fill(),s.globalCompositeOperation="source-over"});
+e.drawImage(r,0,0);
+let l=corvoLetterState.point;
+if(Et==="Lanterna"&&l&&l.inside){let c=Math.min(t,i)*.18;e.save(),e.strokeStyle="rgba(120,210,255,.54)",e.lineWidth=Math.max(2,t*.004),e.beginPath(),e.arc(l.x,l.y,c*.72,0,Math.PI*2),e.stroke(),e.restore()}
+Lm()}
+function addCorvoErase(n){
+let e=Math.min(corvoLetterState.canvas.width,corvoLetterState.canvas.height)*.13,t=corvoLetterState.erased[corvoLetterState.erased.length-1];
+(!t||Math.hypot(t.x-n.x,t.y-n.y)>e*.35)&&corvoLetterState.erased.push({x:n.x,y:n.y,r:e})}
+function handleCorvoLantern(n){
+if(corvoLetterState.confirming)return;
+if(!corvoLetterState.warningShown){corvoLetterState.warningShown=!0,corvoLetterState.confirming=!0,addCorvoErase(n),renderCorvoLetter(),showCorvoWarning(()=>{corvoLetterState.burnAllowed=!0,corvoLetterState.confirming=!1,Qo("Você mantém a Lanterna sobre a carta. A tinta cede à luz.")},()=>{corvoLetterState.warningShown=!1,corvoLetterState.confirming=!1,Et=null,document.body.setAttribute("data-tool","none"),Ri(),Qo("Você afasta a Lanterna. A parte já tocada permanece apagada.")});return}
+if(!corvoLetterState.burnAllowed){Et=null,document.body.setAttribute("data-tool","none"),Ri();return}
+addCorvoErase(n);
+let e=corvoLetterState.canvas,t=e.width,i=e.height,r=n.x-t*.52,s=n.y-i*.55;
+if(!corvoLetterState.coinRevealed&&r*r+s*s<Math.pow(Math.min(t,i)*.12,2)){
+corvoLetterState.coinRevealed=!0,window.GameState&&(window.GameState.states=window.GameState.states||{},window.GameState.states.moedaCorvoRevelada=!0),Qo("Há um relevo estranho na carta. Uma Moeda do Corvo se desprende do pergaminho."),addDirect({...CorvoCoinItem,flyOrigin:new D(0,1,1)},"loot",new D(0,1,1))}}
+function showCorvoWarning(n,e){
+Gm();
+let t=document.getElementById("corvo-warning-modal");
+if(!t)t=document.createElement("div"),t.id="corvo-warning-modal",t.className="xylo-modal",t.innerHTML='<div class="xylo-dialog"><h3>Carta do Corvo</h3><p>O texto começa a sumir sob a magia da Lanterna. Deseja continuar?</p><div class="xylo-actions"><button type="button" id="corvo-warning-no">Não</button><button type="button" id="corvo-warning-yes">Sim</button></div></div>',document.body.appendChild(t);
+document.getElementById("corvo-warning-yes").onclick=()=>{t.style.display="none",n&&n()},document.getElementById("corvo-warning-no").onclick=()=>{t.style.display="none",e&&e()},t.style.display="flex"}
 function pm(){
 if(!edgar2dState||!edgar2dState.active||!edgar2dState.canvas)return;
 const n=edgar2dState.canvas,e=n.getContext("2d"),t=n.width,i=n.height;
@@ -14462,7 +14670,8 @@ if(fm(e))return e;
 It.clues=It.clues.filter(r=>r.id!=="Olho_Nimue");
 const t=Ts["hotspot-olho"],i={id:"Olho_Nimue",type:"tool",title:"Olho de Ônix (Ativo)",icon:"/onyx_eye.png",mat:t&&t.mat,dim:[1.2,1.2],sound:"magic",flyOrigin:new D(0,0,0),onyxOpen:!0};
 It.tools=It.tools.filter(r=>r.id!=="Olho_Nimue"),It.tools.push(i);
-It.loot.some(r=>r.id==="Pedra_Ioun_Intelecto")||It.loot.push({id:"Pedra_Ioun_Intelecto",type:"loot",title:"Pedra de Ioun do Intelecto",icon:"",visual:"iounBlue",dim:[1.2,1.2],sound:"magic"});
+let r=It.loot.find(s=>s.id==="Pedra_Ioun_Intelecto");
+r?(r.icon=PH.PedraYoun,delete r.visual):It.loot.push({id:"Pedra_Ioun_Intelecto",type:"loot",title:"Pedra de Ioun do Intelecto",icon:PH.PedraYoun,dim:[1.2,1.2],sound:"magic"});
 if(window.GameState){
 window.GameState.states&&(window.GameState.states.onyxEyeState="inventory_open");
 Array.isArray(window.GameState.inventory)&&(window.GameState.inventory.includes("Olho_Nimue")||window.GameState.inventory.push("Olho_Nimue"),window.GameState.inventory.includes("Pedra_Ioun_Intelecto")||window.GameState.inventory.push("Pedra_Ioun_Intelecto"));
@@ -14492,9 +14701,65 @@ let g=document.getElementById(e==="tools"?"tools-grid":e==="clues"?"clues-grid":
 r.style.position="fixed",r.style.left=s.x+"px",r.style.top=s.y+"px",r.style.width="42px",r.style.height="42px",r.style.borderRadius="50%",r.style.zIndex="3400",r.style.pointerEvents="none",r.style.background=n.visual==="iounBlue"?"radial-gradient(circle at 35% 30%, #e7fbff 0%, #70dcff 22%, #1475ff 58%, #031a52 100%)":`center/cover no-repeat url(${n.icon})`,r.style.boxShadow=n.visual==="iounBlue"?"0 0 18px rgba(86,190,255,.95), inset -8px -10px 16px rgba(0,20,90,.55)":"0 0 14px rgba(201,167,119,.75)",r.style.transform="translate(-50%, -50%) scale(.82)",r.style.opacity="0",r.style.transition="left .9s cubic-bezier(.2,.8,.2,1), top .9s cubic-bezier(.2,.8,.2,1), transform .9s ease, opacity .28s ease",document.body.appendChild(r);
 requestAnimationFrame(()=>{r.style.opacity="1",r.style.left=o.x+"px",r.style.top=o.y+"px",r.style.transform="translate(-50%, -50%) scale(.42)"});
 setTimeout(()=>{r.remove(),t.animate([{transform:"translateY(0) scale(1)"},{transform:"translateY(-5px) scale(1.08)"},{transform:"translateY(0) scale(1)"}],{duration:390,easing:"ease-out"})},980)}))}
+function hasInv(n){
+return It.tools.some(e=>e.id===n)||It.clues.some(e=>e.id===n)||It.loot.some(e=>e.id===n)}
+function addDirect(n,e="loot",t=null){
+if(hasInv(n.id))return!1;
+const i={...n,flyOrigin:t||n.flyOrigin};
+i.id==="Lanterna"&&(i.mat=Ts["hotspot-lanterna"]&&Ts["hotspot-lanterna"].mat||er("/lantern.png"));
+It[e].push(i),window.GameState&&Array.isArray(window.GameState.inventory)&&!window.GameState.inventory.includes(i.id)&&window.GameState.inventory.push(i.id),Jo(i.sound||"metal"),el((i.title||i.id)+" adicionado ao inventário"),Mr("Recebeu: ["+(i.title||i.id)+"].",i.id),Ri();
+return!0}
+function removeDirect(n){
+["tools","clues","loot"].forEach(e=>It[e]=It[e].filter(t=>t.id!==n));
+window.GameState&&Array.isArray(window.GameState.inventory)&&(window.GameState.inventory=window.GameState.inventory.filter(e=>e!==n));
+invSeen.tools.delete(n),invSeen.clues.delete(n),invSeen.loot.delete(n)}
+let assemblySelection=[];
+function updateLanternAssembly(){
+let n=document.getElementById("assemble-lantern-btn"),e=document.getElementById("inventory-panel");
+if(!e)return;
+if(!n)n=document.createElement("button"),n.id="assemble-lantern-btn",n.textContent="Montar Itens",n.onclick=openAssemblyModal,e.appendChild(n);
+n.style.display=It.loot.length?"block":"none"}
+function ensureAssemblyModal(){
+let n=document.getElementById("assembly-modal");
+if(n)return n;
+n=document.createElement("div"),n.id="assembly-modal",n.innerHTML='<div id="assembly-dialog"><h3>Montar Itens</h3><p>Escolha até três itens do loot para testar uma combinação.</p><div id="assembly-grid" class="assembly-grid"></div><div id="assembly-feedback" class="assembly-feedback"></div><div class="assembly-actions"><span id="assembly-counter">0/3</span><button type="button" id="assembly-close">Fechar</button><button type="button" id="assembly-confirm">Montar</button></div></div>',document.body.appendChild(n),n.addEventListener("click",e=>{e.target===n&&closeAssemblyModal()}),document.getElementById("assembly-close").onclick=closeAssemblyModal,document.getElementById("assembly-confirm").onclick=confirmAssembly;
+return n}
+function openAssemblyModal(){
+const n=ensureAssemblyModal();
+assemblySelection=[],renderAssemblyChoices(),n.style.display="flex"}
+function closeAssemblyModal(){
+let n=document.getElementById("assembly-modal");
+n&&(n.style.display="none")}
+function setAssemblyFeedback(n,e=!1){
+let t=document.getElementById("assembly-feedback");
+t&&(t.textContent=n,t.className="assembly-feedback"+(e?" success":""))}
+function renderAssemblyChoices(){
+let n=document.getElementById("assembly-grid"),e=document.getElementById("assembly-counter");
+if(!n)return;
+n.innerHTML="",It.loot.forEach(t=>{
+let i=document.createElement("button"),r=assemblySelection.includes(t.id);
+i.type="button",i.className="assembly-choice"+(r?" selected":""),i.innerHTML='<div class="assembly-icon"></div><span></span>';
+let s=i.querySelector(".assembly-icon");
+t.visual==="iounBlue"?(s.style.background="radial-gradient(circle at 35% 30%, #e7fbff 0%, #70dcff 22%, #1475ff 58%, #031a52 100%)",s.style.boxShadow="0 0 12px rgba(86,190,255,.85)"):(s.style.backgroundImage=`url(${t.icon})`);
+i.querySelector("span").textContent=t.title||t.id,i.onclick=()=>toggleAssemblyItem(t.id),n.appendChild(i)});
+e&&(e.textContent=assemblySelection.length+"/3")}
+function toggleAssemblyItem(n){
+assemblySelection.includes(n)?assemblySelection=assemblySelection.filter(e=>e!==n):assemblySelection.length<3?assemblySelection.push(n):setAssemblyFeedback("Escolha no máximo três itens.");
+renderAssemblyChoices()}
+function confirmAssembly(){
+const n=assemblySelection.slice(0,3),e=n.filter(t=>LANTERN_PARTS.includes(t)).length,i=n.filter(t=>MONKEY_BOMB_PARTS.includes(t)).length;
+if(n.length===3&&e===3&&!hasInv("Lanterna")){
+LANTERN_PARTS.forEach(removeDirect),closeAssemblyModal(),addDirect(LanternItems.Lanterna,"tools",new D(0,-1,1)),Qo("Você montou a Lanterna. O corpo, a lente e o núcleo se alinham em uma luz estável."),el("Você montou a Lanterna"),Mr("Você montou a Lanterna a partir das três peças.","Lanterna"),Ri();
+return}
+if(n.length===3&&i===3&&!hasInv("Simio_Ruina")){
+MONKEY_BOMB_PARTS.forEach(removeDirect),closeAssemblyModal(),addDirect(CraftedItems.Simio_Ruina,"loot",new D(0,-1,1)),Qo("Você montou o Símio da Ruína. O pequeno autômato agora carrega pólvora e gatilho em silêncio."),el("Símio da Ruína montado"),Mr("Macaco mecânico, pólvora e gatilho foram combinados em uma bomba-autômato.","Simio_Ruina"),Ri();
+return}
+if(n.length===3&&(e===2||i===2)){setAssemblyFeedback("Está quase certo, mas ainda falta algo.");return}
+setAssemblyFeedback("Essa combinação não parece funcionar.")}
 window.addEventListener("mousemove",n=>{
 Et==="Lupa"?(lo.style.left=n.clientX+"px",lo.style.top=n.clientY+"px"):Et==="Lanterna"&&(co.style.left=n.clientX+"px",co.style.top=n.clientY+"px");
 Et==="Olho_Nimue"&&document.getElementById("eye-cursor")&&(document.getElementById("eye-cursor").style.left=n.clientX+"px",document.getElementById("eye-cursor").style.top=n.clientY+"px");
+Et==="Engrenagem"&&document.getElementById("gear-cursor")&&(document.getElementById("gear-cursor").style.left=n.clientX+"px",document.getElementById("gear-cursor").style.top=n.clientY+"px");
 edgar2dState&&edgar2dState.active&&edgar2dState.canvas&&(edgar2dState.point=cm(edgar2dState.canvas,n),pm());
 zm(n);
 const t=document.getElementById("game-container").getBoundingClientRect();
@@ -14536,6 +14801,7 @@ si.remove(t),e.type==="tool"?It.tools.push(e):It.clues.push(e),Ri()}
 }
 )}
 function Ri(){
+scrubHiddenRoomAccessFromInventory();
 const n=document.getElementById("tools-grid"),e=document.getElementById("clues-grid");
 n.innerHTML="",It.tools.forEach(i=>{
 const r=document.createElement("div");
@@ -14560,7 +14826,7 @@ r.className="inv-slot"+(mn===i.id?" active":""),i.visual==="iounBlue"?(r.style.b
 	}
 	)`),r.title=i.title||i.id,r.style.borderColor="#00ffff",r.style.boxShadow=i.visual==="iounBlue"?"0 0 16px rgba(86,190,255,.9), inset -8px -10px 16px rgba(0,20,90,.45)":"0 0 10px rgba(0,255,255,0.5)",r.onclick=()=>ho(i.id);
 let s=document.createElement("span");s.className="inv-name-label",s.textContent=i.title||i.id,r.appendChild(s),t.appendChild(r),sm(i,"loot",r)}
-)}
+) ,updateLanternAssembly()}
 function nm(n){
 Et===n?Et=null:Et=n,document.body.setAttribute("data-tool",Et||"none"),edgar2dState&&edgar2dState.active&&pm();
 window.activeInspectMesh&&window.activeInspectMesh.userData.id==="Olho_Nimue"&&(window.activeInspectMesh.material.uniforms.uLantern.value=Et==="Lanterna",Et==="Lanterna"&&Jo("magic")),Ri()}
@@ -14574,7 +14840,7 @@ return}
 if(window.activeInspectMesh) { si.remove(window.activeInspectMesh); }
 window.activeInspectMesh = null;
 mn = n;
-Mr(`EstÃ¡ investigando detalhadamente: [${
+Mr(`Está investigando detalhadamente: [${
 		e.title
 	}
 	]...`);
@@ -14583,6 +14849,10 @@ if(e.id==="Carta_Edgar"){
 um(e)}
 else if(e.id==="Carta_Forja"){
 rm(e)}
+else if(e.id==="Carta_Sociedade_Corvo"){
+openCorvoInspect(e)}
+else if(e.id==="Retrato_Familia_Nox"){
+openNoxPortraitInspect(e)}
 else if(e.visual==="iounBlue"){
 edgar2dState&&(edgar2dState.active=!1);
 c2d=am("div"),c2d.textContent="",c2d.className="",c2d.style.width="220px",c2d.style.height="220px",c2d.style.maxWidth="42vw",c2d.style.maxHeight="42vh",c2d.style.borderRadius="50%",c2d.style.background="radial-gradient(circle at 35% 30%, #e7fbff 0%, #70dcff 22%, #1475ff 58%, #031a52 100%)",c2d.style.boxShadow="0 0 34px rgba(86,190,255,.95), inset -28px -34px 42px rgba(0,20,90,.55)",c2d.style.display="block"}
@@ -14593,7 +14863,7 @@ document.body.classList.add("inspect-mode");
 var ui=document.getElementById("ui-layer"); if(ui) ui.style.zIndex="3200";
 document.querySelectorAll("#ui-layer #blur-overlay").forEach(n=>n.style.background="transparent");
 var pnl=document.getElementById("inventory-panel"); if(pnl) pnl.style.bottom="20px",pnl.style.zIndex="3300",pnl.style.opacity="1";
-var clsBtn=document.getElementById("close-clue-btn"); if(clsBtn) clsBtn.style.display="block",clsBtn.style.zIndex="3301";
+var clsBtn=document.getElementById("close-clue-btn"); if(clsBtn) clsBtn.textContent="Voltar para Cena",clsBtn.style.display="block",clsBtn.style.zIndex="3302";
 Km(e);
 Ri()}
 document.getElementById("close-clue-btn").addEventListener("click",()=>{
@@ -14605,6 +14875,8 @@ let c2d = document.getElementById("clue-2d-view");
 if(c2d) { c2d.style.display = "none"; }
 Nm();
 edgar2dState&&(edgar2dState.active=!1,edgar2dState.point=null);
+corvoLetterState&&(corvoLetterState.point=null,corvoLetterState.canvas=null);
+noxPortraitState&&(noxPortraitState.point=null,noxPortraitState.canvas=null);
 document.body.classList.remove("inspect-mode");
 document.getElementById("close-clue-btn").style.display="none";
 let ui=document.getElementById("ui-layer"); if(ui) ui.style.zIndex="";
@@ -14631,34 +14903,42 @@ Es.render()}
 tl();
 window.addEventListener("resize",()=>{
 const n=document.getElementById("game-container");
-Si.aspect=n.clientWidth/n.clientHeight,Si.updateProjectionMatrix(),wi.setSize(n.clientWidth,n.clientHeight),Es.setSize(n.clientWidth,n.clientHeight),edgar2dState&&edgar2dState.active&&edgar2dState.canvas&&(lm(edgar2dState.canvas),edgar2dState.layout=null,pm()),mn==="Olho_Nimue"&&document.getElementById("clue-2d-view")&&bm(document.getElementById("clue-2d-view")),Lm()}
+Si.aspect=n.clientWidth/n.clientHeight,Si.updateProjectionMatrix(),wi.setSize(n.clientWidth,n.clientHeight),Es.setSize(n.clientWidth,n.clientHeight),edgar2dState&&edgar2dState.active&&edgar2dState.canvas&&(lm(edgar2dState.canvas),edgar2dState.layout=null,pm()),mn==="Carta_Sociedade_Corvo"&&corvoLetterState&&corvoLetterState.canvas&&(lm(corvoLetterState.canvas),renderCorvoLetter()),mn==="Retrato_Familia_Nox"&&noxPortraitState&&noxPortraitState.canvas&&(setInspectCanvasAspect(noxPortraitState.canvas,.78),renderNoxPortrait()),mn==="Olho_Nimue"&&document.getElementById("clue-2d-view")&&bm(document.getElementById("clue-2d-view")),Lm()}
 );
 window._syncNetworkItems=function(n){
-n.forEach(e=>{
-const t=document.getElementById(e);
-if(t&&!t.classList.contains("collected")){
-t.classList.add("collected");
-const i=Ts[e];
-i&&(i.type==="tool"?It.tools.push(i):It.clues.push(i))}
-}
-),Ri()}
+applyNetworkSnapshot(vt.table||{collectedItems:n})}
 ;
-let tr=[];
+const HOTSPOT_EDITOR_MAX_POINTS=8;
+let tr=[],hotspotEditorMarkers=[];
+function formatHotspotCoords(){
+return "["+tr.map(n=>"["+n.x+", "+n.y+"]").join(", ")+"]"}
+function ensureHotspotEditorPanel(){
+Gm();
+let n=document.getElementById("hotspot-editor-panel");
+if(n)return n;
+n=document.createElement("div"),n.id="hotspot-editor-panel",n.innerHTML='<h3>Editor de Hotspots <span id="hotspot-editor-count">0/8</span></h3><div>Shift+clique adiciona pontos ao hotspot selecionado.</div><pre id="hotspot-editor-coords">[]</pre><button type="button" id="hotspot-copy-coords">Copiar coordenadas</button><button type="button" id="hotspot-clear-coords">Limpar</button>',document.body.appendChild(n),document.getElementById("hotspot-copy-coords").onclick=copyHotspotCoords,document.getElementById("hotspot-clear-coords").onclick=clearHotspotCoords;
+return n}
+function updateHotspotEditorPanel(){
+let n=ensureHotspotEditorPanel(),e=document.getElementById("hotspot-editor-count"),t=document.getElementById("hotspot-editor-coords");
+n.style.display=tr.length?"block":"none",e&&(e.textContent=tr.length+"/"+HOTSPOT_EDITOR_MAX_POINTS),t&&(t.textContent=formatHotspotCoords())}
+function clearHotspotCoords(){
+tr=[],hotspotEditorMarkers.forEach(n=>n.remove()),hotspotEditorMarkers=[],updateHotspotEditorPanel()}
+function copyHotspotCoords(){
+const n=formatHotspotCoords();
+if(!tr.length){Qo("Nenhum ponto de hotspot foi marcado ainda.");return}
+const e=()=>{el("Coordenadas copiadas"),Qo("Coordenadas copiadas para a área de transferência.")};
+if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(n).then(e).catch(()=>fallbackCopyHotspotCoords(n,e));
+else fallbackCopyHotspotCoords(n,e)}
+function fallbackCopyHotspotCoords(n,e){
+let t=document.createElement("textarea");
+t.value=n,t.style.position="fixed",t.style.opacity="0",document.body.appendChild(t),t.select(),document.execCommand("copy"),t.remove(),e()}
 window.addEventListener("click",n=>{
 if(!n.shiftKey)return;
-const t=document.getElementById("game-container").getBoundingClientRect(),i=(n.clientX-t.left)/t.width*1920,r=(n.clientY-t.top)/t.height*1080;
-tr.push(`${
-		Math.round(i)
-	}
-,${
-		Math.round(r)
-	}
-	`);
-let s=document.createElement("div");
-if(s.style.position="absolute",s.style.left=n.clientX-5+"px",s.style.top=n.clientY-5+"px",s.style.width="10px",s.style.height="10px",s.style.background="lime",s.style.borderRadius="50%",s.style.pointerEvents="none",s.style.zIndex="999",document.body.appendChild(s),tr.length===4){
-let o=tr.join(" ");
-alert("Copie esses nÃºmeros e mande no chat: "+o),tr=[]}
-}
+const e=document.getElementById("game-container").getBoundingClientRect(),t=Math.round((n.clientX-e.left)/e.width*1920),i=Math.round((n.clientY-e.top)/e.height*1080);
+if(tr.length>=HOTSPOT_EDITOR_MAX_POINTS){Qo("Limite de 8 pontos atingido. Copie ou limpe as coordenadas antes de marcar mais pontos.");updateHotspotEditorPanel();return}
+tr.push({x:t,y:i});
+let r=document.createElement("div");
+r.className="hotspot-editor-marker",r.style.left=n.clientX+"px",r.style.top=n.clientY+"px",document.body.appendChild(r),hotspotEditorMarkers.push(r),updateHotspotEditorPanel()}
 );
 
 // ===== EXPORTS GLOBAIS PARA index.html =====
@@ -14687,6 +14967,239 @@ return}
 if(n&&n.states&&n.states.onyxEyeState==="inventory_closed")Qo("A pedra de ônix permanece fechada. A Lanterna precisa despertar a íris antes de encaixá-la nas runas.");
 else if(e)Qo("Selecione o Olho de Ônix ativo nas ferramentas antes de tocar o centro da tábua.");
 else Qo("O espaço central é precisamente redondo, com sulcos arcanos. Nada em suas mãos se encaixa ali.")};
+function pointsToString(n){
+return n.map(e=>e[0]+","+e[1]).join(" ")}
+function createSvgHotspot(n,e,t,i="hotspot"){
+let r=document.createElementNS("http://www.w3.org/2000/svg","polygon");
+r.id=e.id,r.setAttribute("points",pointsToString(e.points)),r.setAttribute("class",i),r.addEventListener("mouseenter",()=>Qo(e.hint||e.title)),r.addEventListener("click",s=>{s.stopPropagation(),s.stopImmediatePropagation&&s.stopImmediatePropagation(),t(e,r)}),n.appendChild(r);
+return r}
+function collectConfiguredItem(n,e=null,t=null){
+if(!n.item)return!1;
+const i=n.item.id,r=window.GameState&&(window.GameState.states=window.GameState.states||{}),s=e||t;
+if(s&&s.classList.contains("collected")||hasInv(i)){Qo((n.item.title||i)+" já foi recolhido.");return!1}
+s&&s.classList.add("collected");
+r&&(r.collectedHotspots=r.collectedHotspots||[],r.collectedHotspots.includes(n.id)||r.collectedHotspots.push(n.id));
+let o=n.item.type==="tool"?"tools":n.item.type==="clue"?"clues":"loot";
+addDirect(n.item,o,n.item.flyOrigin),Qo("Você encontrou: "+(n.item.title||i)+".");
+return!0}
+function ensureXyloModal(){
+Gm();
+let n=document.getElementById("xylo-generic-modal");
+if(n)return n;
+n=document.createElement("div"),n.id="xylo-generic-modal",n.className="xylo-modal",n.innerHTML='<div class="xylo-dialog"><h3 id="xylo-modal-title"></h3><div id="xylo-modal-body"></div><div class="xylo-actions"><button type="button" id="xylo-modal-close">Fechar</button></div></div>',document.body.appendChild(n),n.addEventListener("click",e=>{e.target===n&&(n.style.display="none")}),document.getElementById("xylo-modal-close").onclick=()=>n.style.display="none";
+return n}
+function openGenericModal(n,e){
+const t=ensureXyloModal();
+document.getElementById("xylo-modal-title").textContent=n,document.getElementById("xylo-modal-body").innerHTML=e,t.style.display="flex"}
+function openCorvoLetter(n,e){
+const t={id:n.id,item:{id:"Carta_Sociedade_Corvo",type:"clue",title:"Carta do Sociedade do corvo",icon:"/vintage_paper.png",sound:"paper",flyOrigin:new D(3,4,1)}};
+if(!collectConfiguredItem(t,e))return;
+ho("Carta_Sociedade_Corvo")}
+function openPortraitNox(n,e){
+collectConfiguredItem({id:n.id,item:{id:"Retrato_Familia_Nox",type:"clue",title:"Retrato Familia Nox",icon:PH.RetratoNox,sound:"paper",flyOrigin:new D(0,1,1)}},e);
+hasInv("Retrato_Familia_Nox")&&ho("Retrato_Familia_Nox")}
+function getLanternWorkbenchState(){
+const n=getHiddenRoomState();
+n.lantern=n.lantern||{view:"front",gearInstalled:!1,nucleusReleased:!1,nucleusCollected:!1};
+return n.lantern}
+function openSecretLanternPuzzle(){
+let n=getLanternWorkbenchState();
+n.view="front",ensureSecretLanternModal().style.display="flex",renderSecretLanternPuzzle()}
+function ensureSecretLanternModal(){
+Gm();
+let n=document.getElementById("secret-lantern-modal");
+if(n)return n;
+n=document.createElement("div"),n.id="secret-lantern-modal",n.className="xylo-modal inventory-friendly",n.innerHTML='<div class="xylo-dialog"><h3>Lanterna</h3><p>A lamparina está sobre a mesa, pesada e silenciosa.</p><div id="secret-lantern-view" class="lantern-view front"></div><button type="button" id="secret-lantern-flip" class="lantern-flip" aria-label="Virar lamparina">↓</button><div id="secret-lantern-slot" class="lantern-slot"></div><div id="secret-lantern-feedback" class="lock-feedback"></div><div class="xylo-actions"><button type="button" id="secret-lantern-close">Fechar</button></div></div>',document.body.appendChild(n),document.getElementById("secret-lantern-close").onclick=()=>n.style.display="none",document.getElementById("secret-lantern-flip").onclick=()=>{let e=getLanternWorkbenchState();e.view=e.view==="front"?"back":"front",renderSecretLanternPuzzle()},document.getElementById("secret-lantern-view").onclick=handleLanternViewClick,document.getElementById("secret-lantern-slot").onclick=placeLanternGear;
+return n}
+function renderSecretLanternPuzzle(){
+const n=getLanternWorkbenchState(),e=document.getElementById("secret-lantern-view"),t=document.getElementById("secret-lantern-slot"),i=document.getElementById("secret-lantern-feedback"),r=document.getElementById("secret-lantern-flip");
+e&&(e.className="lantern-view "+n.view),t&&(t.style.display="none",t.textContent=""),i&&(i.style.display="none",i.textContent=""),r&&(r.textContent=n.view==="front"?"↓":"↑")}
+function handleLanternViewClick(n){
+const e=getLanternWorkbenchState();
+if(e.view!=="back"){Qo("A frente não revela onde mexer.");return}
+let i=n.currentTarget.getBoundingClientRect(),r=n.clientX-(i.left+i.width/2),s=n.clientY-(i.top+i.height/2),o=Math.min(i.width,i.height)*.2;
+if(r*r+s*s>o*o){Qo("O centro do mecanismo parece mais promissor.");return}
+placeLanternGear()}
+function placeLanternGear(){
+const n=getLanternWorkbenchState();
+if(n.gearInstalled){renderSecretLanternPuzzle();return}
+if(n.view!=="back"){Qo("A frente não revela onde mexer.");return}
+if(!hasInv("Engrenagem")){Qo("Há um espaço aqui. Talvez algo se encaixe.");return}
+if(Et!=="Engrenagem"){Qo("Selecione a Engrenagem e toque o centro do encaixe.");return}
+n.gearInstalled=!0,n.nucleusReleased=!0,n.nucleusCollected=!0,removeDirect("Engrenagem"),Et=null,document.body.setAttribute("data-tool","none"),Jo("metal"),addDirect({...LanternItems.Nucleo_Arcano,flyOrigin:new D(0,1,1)},"loot",new D(0,1,1)),Qo("A engrenagem encaixa. Você recolhe o Núcleo Arcano."),document.getElementById("secret-lantern-modal").style.display="none",Ri()}
+function collectLanternNucleus(){
+const n=getLanternWorkbenchState();
+if(!n.nucleusReleased||n.nucleusCollected)return;
+n.nucleusCollected=!0,addDirect({...LanternItems.Nucleo_Arcano,flyOrigin:new D(0,1,1)},"loot",new D(0,1,1)),Qo("Você coletou o Núcleo Arcano da lanterna."),renderSecretLanternPuzzle()}
+function getLockChestState(){
+const n=getHiddenRoomState();
+n.lockChest=n.lockChest||{locks:makeRandomLockChestLocks(),solved:!1,keyCollected:!1};
+(!Array.isArray(n.lockChest.locks)||n.lockChest.locks.length!==8)&&!n.lockChest.keyCollected&&(n.lockChest.locks=makeRandomLockChestLocks(),n.lockChest.solved=!1);
+return n.lockChest}
+function toggleLockPattern(n,e){
+[e-1,e,e+1].forEach(t=>{t>=0&&t<n.length&&(n[t]=!n[t])})}
+function makeRandomLockChestLocks(){
+for(let n=0;n<12;n++){
+let e=Array(8).fill(!0),t=3+Math.floor(Math.random()*6);
+for(let i=0;i<t;i++)toggleLockPattern(e,Math.floor(Math.random()*e.length));
+if(!e.every(Boolean))return e}
+return[!1,!0,!1,!1,!0,!0,!1,!1]}
+function randomizeLockChest(n=getLockChestState()){
+if(n.keyCollected||n.solved)return;
+n.locks=makeRandomLockChestLocks(),n.solved=!1}
+function openLockChestPuzzle(){
+let n=getLockChestState();
+randomizeLockChest(n),ensureLockChestModal().style.display="flex",renderLockChestPuzzle()}
+function ensureLockChestModal(){
+Gm();
+let n=document.getElementById("lock-chest-modal");
+if(n)return n;
+n=document.createElement("div"),n.id="lock-chest-modal",n.className="xylo-modal",n.innerHTML='<div class="xylo-dialog"><h3>Grande Baú</h3><p>Oito cadeados dividem a mesma tensão. Ao mexer em um, os vizinhos também alternam.</p><div id="lock-row" class="lock-row"></div><div id="lock-feedback" class="lock-feedback"></div><div class="xylo-actions"><button type="button" id="lock-reset">Reiniciar</button><button type="button" id="lock-close">Fechar</button></div></div>',document.body.appendChild(n),n.addEventListener("click",e=>{e.target===n&&(n.style.display="none")}),document.getElementById("lock-close").onclick=()=>n.style.display="none",document.getElementById("lock-reset").onclick=()=>{let e=getLockChestState();e.locks=makeRandomLockChestLocks(),e.solved=!1,renderLockChestPuzzle()};
+return n}
+function renderLockChestPuzzle(){
+const n=getLockChestState(),e=document.getElementById("lock-row"),t=document.getElementById("lock-feedback");
+if(e)e.innerHTML="",n.locks.forEach((r,s)=>{let o=document.createElement("button");o.type="button",o.className="lock-btn "+(r?"open":"closed"),o.title=r?"Cadeado aberto":"Cadeado fechado",o.setAttribute("aria-label",o.title),o.onclick=()=>toggleLock(s),e.appendChild(o)});
+t&&(t.textContent=n.solved?"Você encontrou uma Chave misteriosa no interior do baú.":"Abra todos os cadeados para destravar o baú.")}
+function toggleLock(n){
+const e=getLockChestState();
+if(e.solved)return;
+toggleLockPattern(e.locks,n),e.solved=e.locks.every(Boolean);
+if(e.solved){Jo("metal"),collectMysteriousKey();let t=document.getElementById("lock-chest-modal");t&&(t.style.display="none");return}
+renderLockChestPuzzle()}
+function collectMysteriousKey(){
+const n=getLockChestState();
+if(!n.solved||n.keyCollected)return;
+n.keyCollected=!0,addDirect({id:"Chave_Misteriosa",type:"loot",title:"Chave misteriosa",icon:PH.ChaveMisteriosa,sound:"metal",flyOrigin:new D(0,0,1)},"loot",new D(0,0,1)),Qo("Você encontrou uma Chave misteriosa no interior do baú.")}
+function setupLanternPhase(){
+const n=document.getElementById("hotspots-layer");
+document.getElementById("hotspot-nucleo-arcano")&&document.getElementById("hotspot-nucleo-arcano").remove();
+const t=document.getElementById("hotspot-janela");
+t&&!t.dataset.lanternLensHook&&(t.dataset.lanternLensHook="1",t.addEventListener("mouseenter",()=>{hasInv("Lente_de_Cristal")||Qo("Uma lente de cristal parece presa ao vidro, grudada pela fuligem endurecida.")},!0),t.addEventListener("click",e=>{if(hasInv("Lente_de_Cristal"))return;e.stopPropagation(),e.stopImmediatePropagation&&e.stopImmediatePropagation();if(Et!=="ChaveDeFenda"){Qo("A lente está presa no vidro. Uma ferramenta fina talvez consiga soltá-la sem quebrar o cristal.");return}addDirect({...LanternItems.Lente_de_Cristal,flyOrigin:new D(-4,5,1)},"loot",new D(-4,5,1)),Qo("Com a Chave de Fenda, você solta a Lente de Cristal do vidro.")},!0));
+window.handleChestClick=function(n){
+n&&(n.stopPropagation&&n.stopPropagation(),n.stopImmediatePropagation&&n.stopImmediatePropagation());
+const e=window.GameState||{states:{},_pending:{}};
+e._pending=e._pending||{};
+if(e.states.chestOpen||hasInv("Corpo_da_Lanterna")){Qo("O baú já está aberto. O corpo da Lanterna foi retirado.");return}
+if(Et!=="Moeda_Salitria"){Qo("O baú está trancado. A fenda no topo tem o tamanho exato de uma moeda.");return}
+e.states.chestOpen=!0,delete e._pending.Lanterna,e._pending.Corpo_da_Lanterna=!0,removeDirect("Moeda_Salitria"),Et==="Moeda_Salitria"&&(Et=null,document.body.setAttribute("data-tool","none")),addDirect({...LanternItems.Corpo_da_Lanterna,flyOrigin:new D(-4,-3,1)},"loot",new D(-4,-3,1)),delete e._pending.Corpo_da_Lanterna,Qo("O baú se abre. Dentro há o corpo vazio de uma Lanterna, mas faltam a lente e o núcleo."),Mr("Baú aberto com a Moeda do Sol. Corpo da Lanterna adicionado ao loot.","Corpo_da_Lanterna")};
+window.interagirBau=window.handleChestClick}
+function ensureBooksPuzzleModal(){
+Gm();
+let n=document.getElementById("books-puzzle-modal");
+if(n)return n;
+n=document.createElement("div"),n.id="books-puzzle-modal",n.innerHTML='<div id="books-puzzle-dialog"><h3>Estante de Xylo</h3><p>Você vê vários livros bagunçados. Cada capa traz uma letra, e há cinco espaços vazios onde eles podem ser colocados.</p><div id="book-targets" class="book-targets"></div><div id="book-status"></div><div id="book-current-row" class="book-current-row"></div><div id="books-grid" class="books-grid"></div><div id="book-history"></div><div id="book-feedback"></div><div class="book-actions"><button type="button" id="books-clear">Limpar</button><button type="button" id="books-confirm">Confirmar</button><button type="button" id="books-close">Fechar</button></div></div>',document.body.appendChild(n),n.addEventListener("click",e=>{e.target===n&&closeBooksPuzzle()}),document.getElementById("books-close").onclick=closeBooksPuzzle,document.getElementById("books-clear").onclick=clearBookAttempt,document.getElementById("books-confirm").onclick=confirmBookAttempt;
+return n}
+function openBooksPuzzle(){
+const n=ensureBooksPuzzleModal();
+bookPuzzleSelection=[],shuffleBookLetters(),renderBooksPuzzle(),n.style.display="flex"}
+function closeBooksPuzzle(){
+let n=document.getElementById("books-puzzle-modal");
+n&&(n.style.display="none")}
+function setBookFeedback(n,e=!1){
+let t=document.getElementById("book-feedback");
+t&&(t.textContent=n,t.className=e?"success":"")}
+function shuffleBookLetters(){
+bookPuzzleLetters=[...BOOK_PUZZLE_LETTERS];
+for(let n=bookPuzzleLetters.length-1;n>0;n--){let e=Math.floor(Math.random()*(n+1));[bookPuzzleLetters[n],bookPuzzleLetters[e]]=[bookPuzzleLetters[e],bookPuzzleLetters[n]]}}
+function getBooksPuzzleState(){
+const n=window.GameState||(window.GameState={states:{},inventory:[]});
+n.states=n.states||{};
+let e=n.states.bookPuzzle;
+if(!e)e=n.states.bookPuzzle={target:BOOK_PUZZLE_WORDS[0],histories:{},burned:[],solved:!1,failed:!1};
+e.histories=e.histories||{},BOOK_PUZZLE_WORDS.forEach(t=>e.histories[t]=e.histories[t]||[]),e.burned=e.burned||[];
+(e.solved||n.states.booksPuzzleSolved)&&(e.solved=!0,n.states.hiddenRoomUnlocked=!0,n.states.quartoEscondidoDesbloqueado=!0);
+e.burned.length===BOOK_PUZZLE_WORDS.length&&(e.failed=!0);
+(!e.target||e.burned.includes(e.target))&&(e.target=BOOK_PUZZLE_WORDS.find(t=>!e.burned.includes(t))||BOOK_PUZZLE_WORDS[0]);
+return e}
+function renderBooksPuzzle(){
+const a=getBooksPuzzleState();
+let n=document.getElementById("books-grid"),e=document.getElementById("book-current-row"),t=document.getElementById("book-targets"),i=document.getElementById("book-status"),r=document.getElementById("book-history");
+if(!n)return;
+t&&(t.innerHTML="",BOOK_PUZZLE_WORDS.forEach(s=>{let o=document.createElement("button"),l=a.burned.includes(s);o.type="button",o.className="book-target"+(a.target===s?" selected":"")+(l?" burned":""),o.textContent=s,o.disabled=l||a.solved||a.failed,o.onclick=()=>setBookTarget(s),t.appendChild(o)}));
+t&&(t.style.display=ri?"flex":"none");
+i&&(i.textContent=a.solved?"A passagem foi aberta.":a.failed?"Todas as combinações se esgotaram. A porta não responde mais a este enigma.":ri?"Palavra atual: "+a.target+" | Tentativas restantes: "+(5-a.histories[a.target].length)+" | Queimadas: "+(a.burned.join(", ")||"nenhuma"):"Tentativas restantes: "+(5-a.histories[a.target].length)+" | Palavras queimadas: "+a.burned.length+"/"+BOOK_PUZZLE_WORDS.length);
+e&&(e.innerHTML="",[0,1,2,3,4].forEach(s=>{let o=document.createElement("div");o.className="book-slot",o.textContent=bookPuzzleSelection[s]?bookPuzzleSelection[s].letter:"",e.appendChild(o)}));
+n.innerHTML="",bookPuzzleLetters.forEach(s=>{let o=document.createElement("button"),l=bookPuzzleSelection.some(c=>c.id===s.id),u=a.solved||a.failed||a.burned.includes(a.target)||bookPuzzleSelection.length>=5&&!l;o.type="button",o.className="book-choice"+(l?" used":""),o.textContent=s.letter,o.disabled=u,o.onclick=()=>selectBookPuzzle(s),n.appendChild(o)});
+r&&(r.innerHTML="",BOOK_PUZZLE_WORDS.forEach((s,o)=>{let l=a.histories[s];if(!l.length)return;let u=document.createElement("div");u.className="book-history-word",u.innerHTML="<strong>"+(ri?s+(a.burned.includes(s)?" (queimada)":""):"Tentativas "+(o+1)+(a.burned.includes(s)?" (queimada)":""))+"</strong>",l.forEach(c=>{let h=document.createElement("div");h.className="book-history-row",c.letters.forEach((d,f)=>{let p=document.createElement("div");p.className="book-tile "+c.marks[f],p.textContent=d,h.appendChild(p)}),u.appendChild(h)}),r.appendChild(u)}),r.innerHTML||(r.innerHTML='<div class="book-history-empty">Nenhuma tentativa ainda.</div>'))}
+function selectBookPuzzle(n){
+if(bookPuzzleSelection.some(e=>e.id===n.id))return;
+bookPuzzleSelection.length<5&&(bookPuzzleSelection.push(n),setBookFeedback(""),renderBooksPuzzle())}
+function setBookTarget(n){
+const e=getBooksPuzzleState();
+if(e.solved||e.failed||e.burned.includes(n))return;
+e.target=n,bookPuzzleSelection=[],setBookFeedback(""),renderBooksPuzzle()}
+function clearBookAttempt(){
+bookPuzzleSelection=[],setBookFeedback(""),renderBooksPuzzle()}
+function scoreBookGuess(n,e){
+let t=Array(5).fill("neutral"),i={};
+e.split("").forEach(r=>i[r]=(i[r]||0)+1);
+n.forEach((r,s)=>{r===e[s]&&(t[s]="green",i[r]--)});
+n.forEach((r,s)=>{t[s]!=="green"&&i[r]>0&&(t[s]="yellow",i[r]--)});
+return t}
+function confirmBookAttempt(){
+const n=getBooksPuzzleState();
+if(n.solved||n.failed)return;
+if(n.burned.includes(n.target)){setBookFeedback("Essa palavra já foi queimada.");return}
+if(bookPuzzleSelection.length!==5){setBookFeedback("Preencha os cinco espaços antes de confirmar.");return}
+const e=bookPuzzleSelection.map(r=>r.letter),t=e.join(""),i=scoreBookGuess(e,n.target);
+n.histories[n.target].push({letters:e,marks:i});
+if(t===n.target){solveBooksPuzzle();bookPuzzleSelection=[],renderBooksPuzzle();return}
+if(n.histories[n.target].length>=5&&!n.burned.includes(n.target)){
+n.burned.push(n.target);
+if(n.burned.length===BOOK_PUZZLE_WORDS.length)n.failed=!0,window.GameState&&(window.GameState.states.booksPuzzleFailed=!0),setBookFeedback("Todas as combinações se esgotaram. A porta não pode mais ser aberta por este puzzle.");
+else n.target=BOOK_PUZZLE_WORDS.find(r=>!n.burned.includes(r)),setBookFeedback(ri?"A palavra "+t+" falhou. "+n.burned[n.burned.length-1]+" foi queimada.":"Essa sequência se esgotou. Outra combinação da estante ainda pode responder.")}
+else setBookFeedback("A tentativa foi registrada.");
+bookPuzzleSelection=[],renderBooksPuzzle()}
+function solveBooksPuzzle(){
+const n=ensureTableState(),e=getBooksPuzzleState();
+n.states.booksPuzzleSolved=!0,n.states.hiddenRoomUnlocked=!0,n.states.quartoEscondidoDesbloqueado=!0;
+e.solved=!0,e.failed=!1;
+setBookFeedback("A ordem se encaixa. Uma passagem estreita se destrava atrás da estante.",!0),Qo("A estante desliza alguns centímetros. Agora é possível ir para o Quarto Escondido."),el("Quarto Escondido desbloqueado"),Mr("Puzzle dos livros resolvido. Acesso ao Quarto Escondido liberado."),updateHiddenRoomAccess()}
+function getHiddenRoomState(){
+const n=window.GameState||(window.GameState={states:{},inventory:[]});
+n.states=n.states||{},n.states.hiddenRoom=n.states.hiddenRoom||{collected:[]};
+return n.states.hiddenRoom}
+function ensureHiddenRoomScene(){
+Gm();
+let n=document.getElementById("hidden-room-scene");
+if(n)return n;
+n=document.createElement("div"),n.id="hidden-room-scene",n.innerHTML='<div class="hidden-room-title">Quarto Escondido</div><button type="button" class="hidden-room-back">Voltar para a Sala Principal</button><svg id="secret-hotspots-svg" viewBox="0 0 1920 1080"></svg>',document.getElementById("game-container").appendChild(n),n.querySelector(".hidden-room-back").onclick=returnMainRoom;
+let e=n.querySelector("#secret-hotspots-svg");
+HIDDEN_ROOM_HOTSPOTS.forEach(t=>createSvgHotspot(e,t,handleHiddenRoomHotspot,"hidden-room-hotspot"));
+return n}
+function handleHiddenRoomHotspot(n){
+const e=getHiddenRoomState();
+if(n.action==="lantern"){openSecretLanternPuzzle();return}
+if(n.action==="document"){openCorvoLetter(n,document.getElementById(n.id));return}
+if(n.action==="portrait"){openPortraitNox(n,document.getElementById(n.id));return}
+if(n.action==="lockChest"){openLockChestPuzzle();return}
+if(n.item){collectConfiguredItem(n,document.getElementById(n.id));return}
+Qo(n.message),Mr(n.message,n.title)}
+function openHiddenRoom(){
+const n=window.GameState;
+n&&(n.states=n.states||{});
+if(!n||!(n.states.hiddenRoomUnlocked||n.states.quartoEscondidoDesbloqueado)){Qo("A passagem atrás da estante ainda está travada.");return}
+setTableRoom("Quarto_Escondido",!1),Qo("Você atravessa a passagem aberta para o Quarto Escondido."),Mr("Entrou no cenário: Quarto Escondido.")}
+function returnMainRoom(){
+setTableRoom("Sala_Principal",ri),Qo("Você retorna para a sala principal.")}
+function updateHiddenRoomAccess(){
+let n=document.getElementById("hidden-room-btn");
+if(!n)n=document.createElement("button"),n.id="hidden-room-btn",n.textContent="Ir para Quarto Escondido",n.onclick=openHiddenRoom,document.body.appendChild(n);
+const e=window.GameState&&window.GameState.states&&(window.GameState.states.hiddenRoomUnlocked||window.GameState.states.quartoEscondidoDesbloqueado)&&window.GameState.states.currentRoom!=="Quarto_Escondido";
+n.style.display=e&&(ri||!wn)?"block":"none",updateOnlineUi()}
+function setupBooksPuzzle(){
+const n=document.getElementById("hotspots-layer");
+if(n&&!document.getElementById("hotspot-livros")){
+let e=document.createElementNS("http://www.w3.org/2000/svg","polygon");
+e.id="hotspot-livros",e.setAttribute("points","654,315 742,315 742,405 654,405"),e.setAttribute("class","hotspot"),e.addEventListener("mouseenter",()=>Qo("Uma estante ao fundo guarda livros com lombos marcados por letras gastas.")),e.addEventListener("click",t=>{t.stopPropagation(),t.stopImmediatePropagation&&t.stopImmediatePropagation(),openBooksPuzzle()}),n.appendChild(e)}
+updateHiddenRoomAccess()}
+function setupMainExtraHotspots(){
+const n=document.getElementById("hotspots-layer");
+if(!n)return;
+MAIN_EXTRA_HOTSPOTS.forEach(e=>{document.getElementById(e.id)||createSvgHotspot(n,e,(t,i)=>collectConfiguredItem(t,i),"hotspot")})}
+setupLanternPhase();
+setupBooksPuzzle();
+setupMainExtraHotspots();
 Object.defineProperty(window, 'Ts', {
     get: function() { return Ts; }
 });

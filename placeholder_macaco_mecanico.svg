@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="28" fill="#eee8dc"/>
+  <circle cx="256" cy="214" r="86" fill="#c8c0b2" stroke="#5a4632" stroke-width="8"/>
+  <circle cx="168" cy="198" r="44" fill="#c8c0b2" stroke="#5a4632" stroke-width="8"/>
+  <circle cx="344" cy="198" r="44" fill="#c8c0b2" stroke="#5a4632" stroke-width="8"/>
+  <rect x="174" y="294" width="164" height="74" rx="20" fill="#c8c0b2" stroke="#5a4632" stroke-width="8"/>
+  <text x="256" y="434" text-anchor="middle" font-family="serif" font-size="34" fill="#3a2b1c">Macaco Mecanico</text>
+</svg>
