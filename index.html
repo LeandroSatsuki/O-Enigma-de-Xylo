@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- PATCH_VERSION: 1.0.1_HARMONIZED -->
     <title>Xylo's Hideout - Escape Room v4.0</title>
     <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Pirata+One&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
@@ -15,7 +16,6 @@
         }
       }
     </script>
-    <script crossorigin src="/assets/unminified.js"></script>
     <link rel="stylesheet" crossorigin href="/assets/index-dnuxvfgh.css">
   </head>
   <body>
@@ -120,28 +120,28 @@
             <!-- Coordenadas Baseadas na imagem 1920x1080 -->
             <polygon id="hotspot-pergaminho" points="1122,640 1237,610 1281,578 1098,612" class="hotspot"
                      onmouseenter="showHint('Uma página manuscrita por Edgar. Os diagramas parecem se mover quando não olho diretamente para eles.');"
-                     onclick="handleScrollClick();" />
+                     onclick="handleScrollClick(event);" />
             <polygon id="hotspot-lupa" points="1325,624 1405,619 1415,702 1371,664 1341,655" class="hotspot"
                      onmouseenter="showHint('Uma lente de aumento de latão. Suas marcas de uso contam histórias de muitas investigações.');"
-                     onclick="handleLupaClick();" />
+                     onclick="handleLupaClick(event);" />
             <polygon id="hotspot-fenda" points="1147,429 1174,443 1117,578 1098,560" class="hotspot"
                      onmouseenter="showHint('Uma fenda profunda no painel lateral. Algo parece estar preso lá dentro.')"
-                     onclick="handleFendaClick();" />
+                     onclick="handleFendaClick(event);" />
             <polygon id="hotspot-olho" points="1571,100 1644,100 1637,208 1551,209" class="hotspot"
                      onmouseenter="showHint('Uma pedra de ônix entranhada na parede. Escorregadia demais para meus dedos alcançarem.');"
-                     onclick="handleOnyxClick();" />
+                     onclick="handleOnyxClick(event);" />
             <polygon id="hotspot-placa" points="1065,208 1187,196 1189,346 1056,346" class="hotspot"
                      onmouseenter="showHint('Uma grade de metal fixada na parede por parafusos minúsculos. Há algo tilintando atrás dela.');"
-                     onclick="handleGrateClick();" />
+                     onclick="handleGrateClick(event);" />
             <polygon id="hotspot-gaveta" points="966,628 966,670 1007,679 1074,699 1076,658 1009,640 966,628 984,631" class="hotspot"
                      onmouseenter="showHint('A gaveta da escrivaninha. As marcas de runas na madeira sugerem que guarda algo importante.');"
-                     onclick="handleDrawerClick();" />
+                     onclick="handleDrawerClick(event);" />
             <polygon id="hotspot-janela" points="221,1 295,3 299,122 221,119 216,71 216,24 216,3 290,0" class="hotspot"
                      onmouseenter="showHint('O vidro está espesso e coberto por décadas de poeira e fuligem. A luz pálida da anomalia mal consegue penetrar.');"
-                     onclick="handleWindowClick();" />
+                     onclick="handleWindowClick(event);" />
             <polygon id="hotspot-bau" points="253,637 330,611 354,619 369,652 367,707 302,734 296,686 290,658" class="hotspot"
                      onmouseenter="showHint('Um baú de madeira reforçado. Não há fechadura comum — apenas uma fenda estreita e circular no topo.');"
-                     onclick="handleChestClick();" />
+                     onclick="handleChestClick(event);" />
         </svg>
 
         <!-- Canvas Ocultos para Render Textual Dinâmico (Pergaminho) -->
@@ -164,7 +164,9 @@
       </div>
 
       <!-- Fundo dark animado ao debruçar sobre uma pista -->
+      <style> body.inspect-mode #webgl-canvas { z-index: 100 !important; } </style>
       <div id="blur-overlay"></div>
+
       
       <!-- Área Interativa de Custom Cursor -->
       <div id="lens-cursor" class="lens-cursor"></div>
@@ -523,6 +525,9 @@
     <!-- ===== STATE MACHINE: SISTEMA DE INTERAÇÕES DO JOGO ===== -->
     <script id="game-state-machine">
     'use strict';
+    console.log("BRIDGE_READY: Inventory Contract Harmonized v1.0.1");
+    
+    console.log("BRIDGE_READY: Inventory Contract Harmonized v1.0.1");
 
     // ─────────────────────────────────────────────────────────────
     // 1. ESTADO GLOBAL DO JOGO
@@ -597,15 +602,61 @@
         tries = tries || 0;
         var pm = window.puzzleMethods;
         var inv = window.It;
+
+        // Segurança para Modo Host: garante que o array de destino exista
+        if (inv && !Array.isArray(inv[grid])) {
+            inv[grid] = [];
+        }
+
         if (pm && pm.Ri && inv && inv[grid]) {
             // Monta material 3D se ainda não tiver
-            if (!item.mat && pm.er) item.mat = pm.er(item.icon);
+            if (!item.mat) {
+                // Mapa de item-id → hotspot-id para clues com material nativo (ShaderMaterial)
+                var _nativeHotspotMap = {
+                    'Carta_Edgar':  'hotspot-pergaminho',
+                    'Olho_Nimue':   'hotspot-olho'
+                };
+                var _hsKey = _nativeHotspotMap[item.id];
+                var _tsEntry = window.Ts && window.Ts[_hsKey];
+
+                if (_tsEntry && _tsEntry.mat) {
+                    // Usa referência direta ao material nativo em vez de clone() para preservar uniforms
+                    item.mat = _tsEntry.mat;
+                } else if (pm.er) {
+                    // Fallback genérico para itens sem material nativo no registry
+                    item.mat = pm.er(item.icon);
+                    if (item.type === 'clue') {
+                        item.mat.onBeforeCompile = function() {};
+                        item.mat.needsUpdate = true;
+                    }
+                }
+            }
             if (!item.flyOrigin && pm.D && item._origin)
                 item.flyOrigin = new pm.D(item._origin[0], item._origin[1], item._origin[2]);
+            
+            // [DIAG 3] Log estrito _addItem
+            if (item.id === 'Carta_Edgar' || item.id === 'Olho_Nimue') {
+                console.log('--- [DIAG _addItem: ' + item.id + '] ---');
+                console.log('!!window.Ts:', !!window.Ts);
+                console.log('_hsKey:', window.Ts ? _nativeHotspotMap[item.id] : 'N/A');
+                var tsE = window.Ts ? window.Ts[_nativeHotspotMap[item.id]] : null;
+                console.log('!!_tsEntry:', !!tsE);
+                console.log('!!_tsEntry.mat:', !!(tsE && tsE.mat));
+                console.log('_tsEntry.mat.constructor.name:', (tsE && tsE.mat && tsE.mat.constructor) ? tsE.mat.constructor.name : null);
+                console.log('!!_tsEntry.mat.uniforms:', !!(tsE && tsE.mat && tsE.mat.uniforms));
+                console.log('Object.keys(_tsEntry.mat.uniforms):', (tsE && tsE.mat && tsE.mat.uniforms) ? Object.keys(tsE.mat.uniforms) : []);
+                console.log('item.mat.constructor.name:', (item.mat && item.mat.constructor) ? item.mat.constructor.name : null);
+                console.log('!!item.mat.uniforms:', !!(item.mat && item.mat.uniforms));
+                console.log('Object.keys(item.mat.uniforms):', (item.mat && item.mat.uniforms) ? Object.keys(item.mat.uniforms) : []);
+                console.log('-----------------------------------');
+            }
+            
             var exists = inv[grid].some(function(x) { return x.id === item.id; });
+            
             if (!exists) {
                 inv[grid].push(item);
                 pm.Ri();
+                
                 // Marca no inventário de IDs
                 if (window.GameState.inventory.indexOf(item.id) === -1)
                     window.GameState.inventory.push(item.id);
@@ -649,56 +700,64 @@
     // ─────────────────────────────────────────────────────────────
 
     // ── A. CHAVE DE FENDA (hotspot-fenda) ────────────────────────
-    window.handleFendaClick = function() {
+    window.handleFendaClick = function(e) {
+        if (e) {
+            if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+            else if (e.stopPropagation) e.stopPropagation();
+        }
         var GS = window.GameState;
         GS._pending = GS._pending || {};
-        // Guard unificado: já coletado OU coleta em andamento
-        if (GS.inventory.indexOf('chave_de_fenda') !== -1 || GS._pending['chave_de_fenda']) {
+        // Guard unificado: ID Canônico ChaveDeFenda
+        if (GS.inventory.indexOf('ChaveDeFenda') !== -1 || GS._pending['ChaveDeFenda']) {
             showHint('A Chave de Fenda já foi removida do suporte. Você deveria tê-la no inventário.');
             return;
         }
-        GS._pending['chave_de_fenda'] = true;
+        GS._pending['ChaveDeFenda'] = true;
         _playSound('wood');
         showHint('Você pega a Chave de Fenda enferrujada do suporte de ferro forjado. Ela pesa mais do que parece.');
         _addItem({
-            id: 'chave_de_fenda',
+            id: 'ChaveDeFenda',
             type: 'tool',
             title: 'Chave de Fenda',
             icon: '/screwdriver.png',
-            dim: [1, 1.5],
+            dim: [1.5, 1.5],
             sound: 'wood',
             _origin: [0.59, 0.44, 0.5]
         }, 'tools', function() {
-            _logAction('🔧 Chave de Fenda coletada do suporte.', 'chave_de_fenda');
+            _logAction('🔧 Chave de Fenda coletada do suporte.', 'ChaveDeFenda');
         });
     };
     // backward-compat alias
     window.interagirChaveVenda = window.handleFendaClick;
 
     // ── B. GRADE DE METAL / PLACA (hotspot-placa) ────────────────
-    window.handleGrateClick = function() {
+    window.handleGrateClick = function(e) {
+        if (e) {
+            if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+            else if (e.stopPropagation) e.stopPropagation();
+        }
         var GS = window.GameState;
         GS._pending = GS._pending || {};
 
-        if (GS.states.grateOpen || GS._pending['moeda_sol']) {
+        if (GS.states.grateOpen || GS._pending['Moeda_Salitria']) {
             showHint('A grade já foi removida. O compartimento atrás dela permanece vazio.');
             return;
         }
 
         var tool = _getActiveTool();
 
-        if (tool !== 'chave_de_fenda') {
+        if (tool !== 'ChaveDeFenda') {
             showHint('Há algo metálico tilintando atrás desta grade, mas o painel está preso por parafusos minúsculos. Meus dedos não cabem ali.');
             return;
         }
 
         // ✅ ferramenta correta
         GS.states.grateOpen = true;
-        GS._pending['moeda_sol'] = true;
+        GS._pending['Moeda_Salitria'] = true;
         _playSound('metal');
         showHint('Com a Chave de Fenda você afrouxou os parafusos da grade! Uma Moeda do Sol cai do compartimento oculto atrás dela.');
         _addItem({
-            id: 'moeda_sol',
+            id: 'Moeda_Salitria',
             type: 'tool',
             title: 'Moeda do Sol',
             icon: '/sol_coin.png',
@@ -706,52 +765,60 @@
             sound: 'metal',
             _origin: [0.62, 0.25, 0.5]
         }, 'tools', function() {
-            _logAction('☀️ Grade aberta com a Chave de Fenda! Moeda do Sol adicionada ao inventário.', 'moeda_sol');
+            _logAction('☀️ Grade aberta com a Chave de Fenda! Moeda de Salítria adicionada ao inventário de ferramentas.', 'Moeda_Salitria');
         });
     };
     // backward-compat alias
     window.interagirGrade = window.handleGrateClick;
 
     // ── C. BAÚ DE MADEIRA (hotspot-bau) ──────────────────────────
-    window.handleChestClick = function() {
+    window.handleChestClick = function(e) {
+        if (e) {
+            if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+            else if (e.stopPropagation) e.stopPropagation();
+        }
         var GS = window.GameState;
         GS._pending = GS._pending || {};
 
-        if (GS.states.chestOpen || GS._pending['lanterna_sol']) {
+        if (GS.states.chestOpen || GS._pending['Lanterna']) {
             showHint('O baú já está aberto e vazio. A Lanterna do Sol foi retirada.');
             return;
         }
 
         var tool = _getActiveTool();
 
-        if (tool !== 'moeda_sol') {
+        if (tool !== 'Moeda_Salitria') {
             showHint('O baú está trancado. Não há uma fechadura comum — apenas uma fenda estreita e circular no topo, do exato tamanho de uma moeda.');
             return;
         }
 
-        // ✅ Moeda do Sol equipada
+        // ✅ Moeda do Sol no inventário equipada
         GS.states.chestOpen = true;
-        GS._pending['lanterna_sol'] = true;
-        _removeItem('moeda_sol');
+        GS._pending['Lanterna'] = true;
+        _removeItem('Moeda_Salitria');
         _playSound('metal');
         showHint('A Moeda do Sol desliza perfeitamente na fenda — um clique mecânico ressoa e o cadeado cede. Dentro do baú, embrulhada em veludo negro, estava a Lanterna do Sol.');
         _addItem({
-            id: 'lanterna_sol',
+            id: 'Lanterna',
             type: 'tool',
             title: 'Lanterna do Sol',
             icon: '/lantern.png',
-            dim: [1, 1.5],
+            dim: [2, 2.5],
             sound: 'metal',
             _origin: [0.18, 0.68, 0.5]
         }, 'tools', function() {
-            _logAction('🔦 Baú aberto com a Moeda do Sol! Lanterna do Sol adicionada ao inventário.', 'lanterna_sol');
+            _logAction('🔦 Baú aberto com a Moeda de Salítria! Lanterna do Sol adicionada ao inventário.', 'Lanterna');
         });
     };
     // backward-compat alias
     window.interagirBau = window.handleChestClick;
 
     // ── D. JANELA AO FUNDO (hotspot-janela) ──────────────────────
-    window.handleWindowClick = function() {
+    window.handleWindowClick = function(e) {
+        if (e) {
+            if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+            else if (e.stopPropagation) e.stopPropagation();
+        }
         var tool = _getActiveTool();
         var modal = document.getElementById('window-modal');
         var textLayer = document.getElementById('window-hidden-text');
@@ -759,7 +826,7 @@
 
         modal.style.display = 'flex';
 
-        if (tool === 'lanterna_sol') {
+        if (tool === 'Lanterna') {
             // Com a lanterna: ativa spotlight/masking
             if (textLayer) textLayer.style.opacity = '1';
             showHint('A luz da Lanterna do Sol dissolve a névoa suja do vidro. Palavras surgem gravadas na superfície interna.');
@@ -773,30 +840,34 @@
     window.openWindowModal = window.handleWindowClick;
 
     // ── E. PERGAMINHO DE EDGAR (hotspot-pergaminho) ──────────────
-    window.handleScrollClick = function() {
+    window.handleScrollClick = function(e) {
+        if (e) {
+            if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+            else if (e.stopPropagation) e.stopPropagation();
+        }
         var GS = window.GameState;
         GS._pending = GS._pending || {};
         var tool = _getActiveTool();
 
-        if (!GS.states.scrollCollected && !GS._pending['carta_edgar']) {
+        if (!GS.states.scrollCollected && !GS._pending['Carta_Edgar']) {
             GS.states.scrollCollected = true;
-            GS._pending['carta_edgar'] = true;
+            GS._pending['Carta_Edgar'] = true;
             _playSound('paper');
             _addItem({
-                id: 'carta_edgar',
+                id: 'Carta_Edgar',
                 type: 'clue',
                 title: 'Carta de Edgar',
                 icon: '/vintage_paper.png',
-                dim: [2, 2.5],
+                dim: [2.5, 3.5],
                 sound: 'paper',
                 _origin: [0.62, 0.59, 0.5]
             }, 'clues', function() {
-                _logAction('📜 Carta de Edgar coletada da mesa.', 'carta_edgar');
+                _logAction('📜 Carta de Edgar coletada da mesa.', 'Carta_Edgar');
             });
         }
 
         // Feedback visual imediato (independente da coleta)
-        if (tool === 'lupa') {
+        if (tool === 'Lupa') {
             showHint('Sob a lente da lupa, certas palavras do manuscrito mudam — "caravana" torna-se "fuga", "destino" torna-se "armadilha".');
         } else {
             showHint('O papel sussurra ao ser tocado. Diagramas de constelações latejem, ocultando verdades que sua mente luta para decifrar. Precise uma lente.');
@@ -804,63 +875,64 @@
     };
 
     // ── F. LUPA (hotspot-lupa) ───────────────────────────────────
-    window.handleLupaClick = function() {
+    window.handleLupaClick = function(e) {
+        if (e) {
+            if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+            else if (e.stopPropagation) e.stopPropagation();
+        }
         var GS = window.GameState;
         GS._pending = GS._pending || {};
-        // Guard unificado: já coletado OU coleta em andamento
-        if (GS.inventory.indexOf('lupa') !== -1 || GS._pending['lupa']) {
+        // Guard unificado: ID Canônico Lupa
+        if (GS.inventory.indexOf('Lupa') !== -1 || GS._pending['Lupa']) {
             showHint('Sua lente de aumento. Essencial para revelar o que a vista desarmada ignora na penumbra.');
             return;
         }
         GS.states.lupaCollected = true;
-        GS._pending['lupa'] = true;
+        GS._pending['Lupa'] = true;
         _playSound('metal');
         showHint('Você pega a lupa de latão da mesa. A lente grossa aumenta tudo dramáticamente.');
         _addItem({
-            id: 'lupa',
+            id: 'Lupa',
             type: 'tool',
             title: 'Lupa de Latão',
-            icon: '/magnifier.png',
-            dim: [1, 1],
+            icon: '/lupa_item.png',
+            dim: [1.5, 1.5],
             sound: 'metal',
             _origin: [0.73, 0.63, 0.5]
         }, 'tools', function() {
-            _logAction('🔍 Lupa de Latão coletada.', 'lupa');
+            _logAction('🔍 Lupa de Latão coletada.', 'Lupa');
         });
     };
 
     // ── G. OLHO DE ÔNIX na parede (hotspot-olho) ─────────────────
-    window.handleOnyxClick = function() {
+    window.handleOnyxClick = function(e) {
+        if (e) {
+            if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+            else if (e.stopPropagation) e.stopPropagation();
+        }
         var GS = window.GameState;
         GS._pending = GS._pending || {};
 
-        if (GS.states.onyxEyeState !== 'scene' || GS._pending['olho_onix_fechado']) {
+        if (GS.states.onyxEyeState !== 'scene' || GS._pending['Olho_Nimue']) {
             showHint('A pedra de ônix já foi retirada da parede. Ela deve estar no inventário.');
             return;
         }
 
-        var tool = _getActiveTool();
-
-        if (tool !== 'pinca') {
-            showHint('A pedra está encravada num buraco estreito e liso. Meus dedos escorregam — preciso de uma pinça ou ferramenta similar.');
-            return;
-        }
-
-        // ✅ Com a pinça
+        // ✅ Coleta direta do Olho
         GS.states.onyxEyeState = 'inventory_closed';
-        GS._pending['olho_onix_fechado'] = true;
+        GS._pending['Olho_Nimue'] = true;
         _playSound('metal');
         showHint('Com a pinça, você extrai a pedra de ônix polida da cavidade na parede. Ela é fria e parece absorver a luz ao redor.');
         _addItem({
-            id: 'olho_onix_fechado',
-            type: 'tool',
+            id: 'Olho_Nimue',
+            type: 'clue',
             title: 'Olho de Ônix (Fechado)',
-            icon: '/onyx_eye.png',
-            dim: [1, 1],
+            icon: '/onyx_eye_closed.png',
+            dim: [1.2, 1.2],
             sound: 'metal',
             _origin: [0.82, 0.14, 0.5]
-        }, 'tools', function() {
-            _logAction('👁️ Olho de Ônix retirado da parede com a pinça.', 'olho_onix_fechado');
+        }, 'clues', function() {
+            _logAction('👁️ Olho de Ônix retirado da parede com a pinça.', 'Olho_Nimue');
         });
     };
 
@@ -868,34 +940,38 @@
     window.handleOnyxInventoryClick = function() {
         var GS = window.GameState;
         GS._pending = GS._pending || {};
-        if (GS.states.onyxEyeState !== 'inventory_closed' || GS._pending['olho_onix_aberto']) return;
+        if (GS.states.onyxEyeState !== 'inventory_closed' || GS._pending['Olho_Nimue']) return;
 
         var tool = _getActiveTool();
-        if (tool !== 'lanterna_sol') {
+        if (tool !== 'Lanterna') {
             showHint('A pedra de ônix permanece inerte. Talvez a luz certa a desperte.');
             return;
         }
 
         GS.states.onyxEyeState = 'inventory_open';
-        GS._pending['olho_onix_aberto'] = true;
-        _removeItem('olho_onix_fechado');
+        GS._pending['Olho_Nimue'] = true;
+        _removeItem('Olho_Nimue');
         _playSound('magic');
         showHint('A luz da Lanterna do Sol atravessa o ônix — a pedra pulsa em verde esmeralda, revelando uma íris brilhante. O Olho despertou.');
         _addItem({
-            id: 'olho_onix_aberto',
-            type: 'tool',
+            id: 'Olho_Nimue',
+            type: 'clue',
             title: 'Olho de Ônix (Ativo)',
-            icon: '/onyx_eye_open.png',
-            dim: [1, 1],
+            icon: '/onyx_eye.png',
+            dim: [1.2, 1.2],
             sound: 'magic',
             _origin: [0, 0, 0]
-        }, 'tools', function() {
+        }, 'clues', function() {
             _logAction('✨ Olho de Ônix ativado pela Lanterna do Sol!');
         });
     };
 
     // ── H. GAVETA DA ESCRIVANINHA (hotspot-gaveta) ───────────────
-    window.handleDrawerClick = function() {
+    window.handleDrawerClick = function(e) {
+        if (e) {
+            if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+            else if (e.stopPropagation) e.stopPropagation();
+        }
         // Sync GameState com puzzleState para o centro do tabuleiro
         if (window.puzzleState && window.puzzleState.solved) {
             window.GameState.states.puzzleSolved = true;
@@ -914,30 +990,30 @@
         }
         GS.states.puzzleSolved = true;
 
-        var tool = _getActiveTool();
+        var hasOnyx = GS.inventory.indexOf('Olho_Nimue') !== -1;
 
-        if (tool === 'olho_onix_fechado') {
+        if (GS.states.onyxEyeState === 'inventory_closed' && hasOnyx) {
             showHint('A pedra de ônix se encaixa perfeitamente no centro, mas permanece inerte. Falta energia — talvez precise ser ativada primeiro.');
-        } else if (tool === 'olho_onix_aberto') {
-            if (GS._pending['carta_forja']) return;
-            GS._pending['carta_forja'] = true;
+        } else if (GS.states.onyxEyeState === 'inventory_open' && hasOnyx) {
+            if (GS._pending['Carta_Forja']) return;
+            GS._pending['Carta_Forja'] = true;
             _playSound('magic');
             showHint('O Olho de Ônix canaliza a luz! As runas queimam em dourado e o fundo da gaveta desliza, revelando um fundo falso.');
             document.getElementById('sliding-puzzle-modal').style.display = 'none';
-            _removeItem('olho_onix_aberto');
+            _removeItem('Olho_Nimue');
             _addItem({
-                id: 'carta_forja',
+                id: 'Carta_Forja',
                 type: 'clue',
                 title: 'Carta da Forja Real',
                 icon: '/vintage_paper.png',
-                dim: [2, 2.5],
+                dim: [2.5, 3.5],
                 sound: 'paper',
                 _origin: [0, 0, 1]
             }, 'clues', function() {
-                _logAction('📜 Carta da Forja Real revelada pela gaveta secreta!', 'carta_forja');
+                _logAction('📜 Carta da Forja Real revelada pela gaveta secreta!', 'Carta_Forja');
             });
         } else {
-            var hint = tool
+            var hint = hasOnyx
                 ? 'Isso não parece se encaixar aqui. O mecanismo pede algo circular de origem arcana.'
                 : 'O espaço central é precisamente redondo, com sulcos arcanos. Nada em suas mãos se encaixa ali.';
             showHint(hint);
@@ -959,6 +1035,8 @@
         configurable: true
     });
 
+    </script>
+    <script defer crossorigin src="/assets/unminified.js?v=bust_cache_123"></script>
     </script>
   </body>
 </html>

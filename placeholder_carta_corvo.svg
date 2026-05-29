@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="28" fill="#efe3ca"/>
+  <rect x="74" y="54" width="364" height="404" rx="12" fill="#f8edd7" stroke="#6b573f" stroke-width="6"/>
+  <text x="256" y="220" text-anchor="middle" font-family="serif" font-size="38" fill="#28170d">Carta do</text>
+  <text x="256" y="272" text-anchor="middle" font-family="serif" font-size="38" fill="#28170d">Corvo</text>
+  <text x="256" y="326" text-anchor="middle" font-family="serif" font-size="58" fill="#28170d">V</text>
+</svg>
